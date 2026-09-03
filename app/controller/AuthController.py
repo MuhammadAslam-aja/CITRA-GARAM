@@ -36,8 +36,11 @@ def login():
                 return jsonify(success=True)
 
         except Exception as e:
-            print(e)  # Debugging untuk error
-            return jsonify(success=False, message='Terjadi kesalahan. Silakan coba lagi.')
+            import traceback
+            traceback.print_exc()
+            print(f"Login Exception: {e}")
+            return jsonify(success=False, message=f'Terjadi kesalahan: {str(e)}')
+
 
     # Render halaman login jika bukan POST
     return render_template('home/index.html', title="Beranda")

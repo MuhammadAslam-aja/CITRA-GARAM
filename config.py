@@ -10,12 +10,16 @@ class Config(object):
     USER = os.environ.get("DB_USERNAME") or os.environ.get("MYSQLUSER") or "root"
     PASSWORD = os.environ.get("DB_PASSWORD") or os.environ.get("MYSQLPASSWORD") or ""
 
-    JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY") or "rzylord"
-    SECRET_KEY = os.environ.get("SECRET_KEY") or JWT_SECRET_KEY
+    jwt_secret = os.environ.get("JWT_SECRET_KEY")
+    if not jwt_secret or jwt_secret == "None":
+        jwt_secret = "rzylord_secret_key_2026"
+
+    JWT_SECRET_KEY = jwt_secret
+    SECRET_KEY = os.environ.get("SECRET_KEY") or jwt_secret
 
     # Build URI for SQLAlchemy
     mysql_url = os.environ.get("MYSQL_URL") or os.environ.get("MYSQL_PRIVATE_URL")
-    if mysql_url:
+    if mysql_url and mysql_url != "None":
         SQLALCHEMY_DATABASE_URI = mysql_url.replace("mysql://", "mysql+pymysql://")
     else:
         if ":" in HOST:
