@@ -1,0 +1,457 @@
+{% extends "layouts/main.html" %} {% block title %}{{ title }}{% endblock %} {%
+block css_custom %}
+{% endblock %} {% block content %}
+<!-- Dataset Section -->
+<div id="dataset-content" class="animate-fade-in">
+  <div class="bg-white p-4 sm:p-8 rounded-2xl retro-card mb-6 sm:mb-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+      <h2 class="text-2xl sm:text-3xl font-bold text-retro-dark">Manajemen Dataset</h2>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <button id="uploadBtn"
+          class="w-full sm:w-auto bg-retro-red text-white px-6 py-3 rounded-lg font-semibold retro-button">
+          Upload Dataset
+        </button>
+        <button id="deleteAllBtn"
+          class="w-full sm:w-auto bg-red-600 text-white px-6 py-3 rounded-lg font-semibold retro-button">
+          Hapus Semua Dataset
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+      <div class="stat-card p-4 sm:p-6 rounded-lg bg-green-50">
+        <h3 class="font-bold text-green-700 mb-2 text-sm sm:text-base">Kualitas Layak</h3>
+        <p id="count-layak" class="text-2xl sm:text-3xl font-bold text-green-600">{{ kualitas_layak }}</p>
+        <p class="text-xs sm:text-sm text-gray-500">gambar</p>
+      </div>
+      <div class="stat-card p-4 sm:p-6 rounded-lg bg-yellow-50">
+        <h3 class="font-bold text-yellow-700 mb-2 text-sm sm:text-base">Kualitas Sedang</h3>
+        <p id="count-sedang" class="text-2xl sm:text-3xl font-bold text-yellow-600">{{ kualitas_sedang }}</p>
+        <p class="text-xs sm:text-sm text-gray-500">gambar</p>
+      </div>
+      <div class="stat-card p-4 sm:p-6 rounded-lg bg-red-50">
+        <h3 class="font-bold text-red-700 mb-2 text-sm sm:text-base">Kualitas Tidak Layak</h3>
+        <p id="count-rendah" class="text-2xl sm:text-3xl font-bold text-red-600">{{ kualitas_rendah }}</p>
+        <p class="text-xs sm:text-sm text-gray-500">gambar</p>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto scrollbar-thin">
+      <table id="tabelData" class="display w-full min-w-full">
+        <thead>
+          <tr class="bg-retro-cream">
+            <th class="text-left p-3 sm:p-4 font-bold text-sm sm:text-base">No</th>
+            <th class="text-left p-3 sm:p-4 font-bold text-sm sm:text-base">Preview</th>
+            <th class="text-left p-3 sm:p-4 font-bold text-sm sm:text-base">Label</th>
+            <th class="text-left p-3 sm:p-4 font-bold text-sm sm:text-base">Upload</th>
+            <th class="text-left p-3 sm:p-4 font-bold text-sm sm:text-base">Aksi</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block js_custom %}
+<script>
+  $(document).ready(function () {
+    $('#tabelData').DataTable({
+      processing: true,
+      serverSide: true,
+      ajax: {
+        url: "{{ url_for('getDatasets') }}",
+        type: "GET",
+        dataType: "json"
+      },
+      columns: [
+        { data: "no", className: "p-3 sm:p-4 text-sm sm:text-base" },
+        { data: "preview", orderable: false, searchable: false, className: "p-3 sm:p-4" },
+        { data: "label", className: "p-3 sm:p-4 text-sm sm:text-base" },
+        { data: "upload", className: "p-3 sm:p-4 text-sm sm:text-base" },
+        { data: "aksi", orderable: false, searchable: false, className: "p-3 sm:p-4" }
+      ],
+      createdRow: function (row) {
+        $(row).addClass("border-b hover:bg-gray-50");
+      },
+      responsive: true,
+      dom: "Bfrtip",
+      language: {
+        search: "Cari:",
+        lengthMenu: "Tampilkan _MENU_ data",
+        info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+        paginate: {
+          first: "Awal",
+          last: "Akhir",
+          next: "→",
+          previous: "←"
+        }
+      }
+    });
+
+
+    // === Refresh count awal ===
+    refreshDatasetCount();
+
+    // === Open Modal Upload ===
+    $("#uploadBtn").click(function () {
+      $.ajax({
+        url: "{{ url_for('uploadDatasets') }}",
+        type: "GET",
+        dataType: "json",
+        cache: false,
+        success: function (result) {
+          if (result.success) {
+            $("#customModalForm").html(result.form);
+            $("#customModalTitle").text("Upload Dataset");
+            $("#customModalForm").attr("action", "{{ url_for('uploadDatasets') }}");
+
+            // Tampilkan modal
+            $("#customModal").removeClass("hidden").addClass("show");
+
+            // Setup fungsi upload setelah modal terbuka
+            setupUploadHandlers();
+          } else {
+            Swal.fire("Error", "Terjadi kesalahan, coba lagi.", "error");
+          }
+        },
+        error: function (xhr) {
+          console.error(xhr.responseText);
+          Swal.fire("Error", "Terjadi kesalahan, coba lagi.", "error");
+        },
+      });
+    });
+
+    $(document).on("click", ".viewBtn", function (e) {
+      e.preventDefault();
+
+      const datasetID = $(this).data("id");
+
+      $.ajax({
+        url: `/dataset/view/${datasetID}`,
+        type: "GET",
+        dataType: "json",
+        success: function (res) {
+          if (res.success) {
+            const data = res.data;
+
+            Swal.fire({
+              title: `Dataset #${data.label}`,
+              html: `
+            <div class="text-center">
+              <div class="bg-gray-200 rounded-lg p-8 mb-4">
+                ${data.image_url
+                  ? `<img src="${data.image_url}" 
+                            alt="preview" 
+                            class="mx-auto w-40 h-40 object-cover rounded-lg border">`
+                  : `<svg class="w-24 h-24 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                      </svg>
+                      <p class="text-gray-500 mt-2">Preview gambar akan ditampilkan di sini</p>`
+                }
+              </div>
+              <p><strong>Label:</strong> ${data.label}</p>
+              <p><strong>Ukuran:</strong> ${data.size || "-"} KB</p>
+              <p><strong>Upload:</strong> ${data.upload || "-"}</p>
+            </div>
+          `,
+              confirmButtonText: "Tutup",
+            });
+
+          } else {
+            Swal.fire("Error", res.message || "Gagal mengambil detail dataset", "error");
+          }
+        },
+        error: function (xhr) {
+          console.error(xhr.responseText);
+          Swal.fire("Error", "Terjadi kesalahan saat mengambil detail dataset", "error");
+        },
+      });
+    });
+
+    // === Tombol Batal di modal ===
+    $(document).on("click", "#closeModalBtn", function () {
+      $("#customModal").removeClass("show").addClass("hidden");
+      clearImagePreviews();
+    });
+
+    $(document).on("click", "#deleteAllBtn", function (e) {
+      e.preventDefault();
+
+      Swal.fire({
+        title: "Apakah anda yakin?",
+        text: "Semua dataset akan dihapus dan tidak dapat dikembalikan.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Ya, Hapus",
+        cancelButtonText: "Batal",
+        confirmButtonColor: "#ef4444"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          $.ajax({
+            url: "/dataset/delete-all",
+            type: "DELETE",
+            dataType: "json",
+            beforeSend: function () {
+              Swal.showLoading();
+            },
+            success: function (response) {
+              if (response.success) {
+                Toast.fire({
+                  icon: "success",
+                  title: response.message
+                });
+                refreshDatasetCount();
+                $("#tabelData").DataTable().ajax.reload(null, false);
+
+              }
+            },
+            error: function (xhr) {
+              console.error(xhr.responseText);
+              let errorMsg = "Terjadi kesalahan, coba lagi.";
+              try {
+                const res = JSON.parse(xhr.responseText);
+                if (res.message) {
+                  errorMsg = res.message;
+                }
+              } catch (e) {
+                console.error("Response bukan JSON valid:", xhr.responseText);
+              }
+              Toast.fire({
+                icon: 'error',
+                title: errorMsg
+              });
+            },
+          });
+        }
+      });
+    });
+
+    $(document).on("click", ".deleteBtn", function (e) {
+      e.preventDefault();
+
+      const datasetID = $(this).data("id");
+
+      Swal.fire({
+        title: "Apakah anda yakin?",
+        text: "Dataset ini akan dihapus! Anda tidak dapat membatalkan.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Ya, Hapus",
+        cancelButtonText: "Batal",
+        confirmButtonColor: "#ef4444"
+      }).then(result => {
+        if (result.isConfirmed) {
+          $.ajax({
+            url: `/dataset/delete/${datasetID}`,
+            type: "DELETE",
+            dataType: "json",
+          }).done(response => {
+            if (response.success) {
+              Toast.fire({
+                icon: "success",
+                title: response.message
+              });
+              $("#tabelData").DataTable().ajax.reload(null, false);
+              refreshDatasetCount();
+            } else {
+              Toast.fire({
+                icon: "error",
+                title: response.message || "Dataset gagal dihapus"
+              });
+            }
+          }).fail(xhr => {
+            console.error(xhr.responseText);
+            let errorMsg = "Terjadi kesalahan, coba lagi.";
+            try {
+              const res = JSON.parse(xhr.responseText);
+              if (res.message) errorMsg = res.message;
+            } catch (e) {
+              console.error("Response bukan JSON valid:", xhr.responseText);
+            }
+            Toast.fire({
+              icon: 'error',
+              title: errorMsg
+            });
+          });
+        }
+      });
+    });
+  });
+
+  function refreshDatasetCount() {
+    $.ajax({
+      url: "{{ url_for('getDatasetCount') }}",
+      type: "GET",
+      dataType: "json",
+      success: function (res) {
+        if (res.success) {
+          // update langsung berdasarkan id
+          $("#count-layak").text(res.kualitas_layak);
+          $("#count-sedang").text(res.kualitas_sedang);
+          $("#count-rendah").text(res.kualitas_rendah);
+        }
+      },
+      error: function (xhr) {
+        console.error("Gagal ambil data count:", xhr.responseText);
+      }
+    });
+  }
+
+  // ==============================
+  // Fungsi Upload Dataset
+  // ==============================
+  let uploadedFiles = [];
+
+  function setupUploadHandlers() {
+    const datasetUploadArea = document.getElementById("datasetUploadArea");
+    const datasetFileInput = document.getElementById("datasetFileInput");
+    const uploadBtn = document.getElementById("uploadDatasetSubmitBtn");
+
+    if (!datasetUploadArea || !datasetFileInput) return;
+
+    // Klik area → buka file input
+    datasetUploadArea.addEventListener("click", () => datasetFileInput.click());
+
+    // Drag Over
+    datasetUploadArea.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      datasetUploadArea.classList.add("drag-over");
+    });
+
+    // Drag Leave
+    datasetUploadArea.addEventListener("dragleave", () => {
+      datasetUploadArea.classList.remove("drag-over");
+    });
+
+    // Drop File
+    datasetUploadArea.addEventListener("drop", (e) => {
+      e.preventDefault();
+      datasetUploadArea.classList.remove("drag-over");
+      handleDatasetFiles(e.dataTransfer.files);
+    });
+
+    // File input change
+    datasetFileInput.addEventListener("change", (e) => {
+      handleDatasetFiles(e.target.files);
+    });
+
+    // Submit Upload
+    if (uploadBtn) {
+      uploadBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+
+        if (uploadedFiles.length === 0) {
+          Swal.fire("Error", "Tidak ada file yang dipilih!", "error");
+          return;
+        }
+
+        const label = document.getElementById("qualityLabel").value;
+
+        Swal.fire({
+          title: "Upload Dataset",
+          text: `Upload ${uploadedFiles.length} file dengan label ${label}?`,
+          icon: "question",
+          showCancelButton: true,
+          confirmButtonText: "Upload",
+          cancelButtonText: "Batal",
+          confirmButtonColor: "#ef4444",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            // Proses upload → simulasi ajax
+            const formData = new FormData();
+            uploadedFiles.forEach((file) => formData.append("files[]", file));
+            formData.append("label", label);
+
+            Swal.fire({
+              title: "Mengupload...",
+              text: "Sedang memproses file dataset",
+              allowOutsideClick: false,
+              didOpen: () => Swal.showLoading(),
+            });
+
+            $.ajax({
+              url: $("#customModalForm").attr("action"),
+              type: "POST",
+              data: formData,
+              processData: false,
+              contentType: false,
+              success: function (res) {
+                if (res.success) {
+                  Toast.fire({
+                    icon: "success",
+                    title: res.message
+                  });
+                  $("#customModal").removeClass("show").addClass("hidden");
+                  $("#tabelData").DataTable().ajax.reload(null, false);
+                  refreshDatasetCount();
+                }
+              },
+              error: function (xhr) {
+                console.error(xhr.responseText);
+                let errorMsg = "Terjadi kesalahan, coba lagi.";
+                try {
+                  const res = JSON.parse(xhr.responseText);
+                  if (res.message) {
+                    errorMsg = res.message;
+                  }
+                } catch (e) {
+                  console.error("Response bukan JSON valid:", xhr.responseText);
+                }
+                Toast.fire({
+                  icon: 'error',
+                  title: errorMsg
+                });
+              }
+            });
+          }
+        });
+      });
+    }
+  }
+
+  // ==============================
+  // Helper Preview Gambar
+  // ==============================
+  function handleDatasetFiles(files) {
+    const previewSection = document.getElementById("imagePreviewSection");
+    const previewGrid = document.getElementById("imagePreviewGrid");
+    const uploadBtn = document.getElementById("uploadDatasetSubmitBtn");
+
+    for (let file of files) {
+      if (file.size > 5 * 1024 * 1024) {
+        Toast.fire({ icon: "error", title: `${file.name} lebih dari 5MB!` });
+        continue;
+      }
+
+      uploadedFiles.push(file);
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const imgDiv = document.createElement("div");
+        imgDiv.classList.add("relative", "w-24", "h-24", "rounded", "overflow-hidden", "border");
+
+        imgDiv.innerHTML = `
+          <img src="${e.target.result}" class="object-cover w-full h-full" alt="preview">
+        `;
+
+        previewGrid.appendChild(imgDiv);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    if (uploadedFiles.length > 0) {
+      previewSection.classList.remove("hidden");
+      uploadBtn.removeAttribute("disabled");
+    }
+  }
+
+  function clearImagePreviews() {
+    document.getElementById("imagePreviewGrid").innerHTML = "";
+    document.getElementById("imagePreviewSection").classList.add("hidden");
+    document.getElementById("uploadDatasetSubmitBtn").setAttribute("disabled", true);
+    uploadedFiles = [];
+  }
+</script>
+{% endblock %}

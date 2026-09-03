@@ -1,0 +1,219 @@
+{% extends "layouts/main.html" %} {% block title %}{{ title }}{% endblock %} {%
+block css_custom %}
+{% endblock %} {% block content %}
+<div id="history-content" class="animate-fade-in">
+  <div class="bg-white p-4 sm:p-8 rounded-2xl retro-card">
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+      <h2 class="text-2xl sm:text-3xl font-bold text-retro-dark">Riwayat Klasifikasi</h2>
+      <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full lg:w-auto">
+        <select id="filterStatus"
+          class="w-full sm:w-auto px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-retro-red focus:outline-none">
+          <option value="">Semua Status</option>
+          <option value="Layak">Layak</option>
+          <option value="Sedang">Sedang</option>
+          <option value="Tidak Layak">Tidak Layak</option>
+        </select>
+        <button id="deleteAllBtn"
+          class="w-full sm:w-auto bg-red-500 text-white px-6 py-2 rounded-lg font-semibold retro-button">
+          Hapus Semua
+        </button>
+        <!-- <button id="exportHistoryBtn"
+          class="w-full sm:w-auto bg-green-500 text-white px-6 py-2 rounded-lg font-semibold retro-button">
+          Export CSV
+        </button> -->
+      </div>
+    </div>
+
+    <div class="overflow-x-auto scrollbar-thin">
+      <table id="tabelData" class="display w-full min-w-full">
+        <thead>
+          <tr class="bg-retro-cream">
+            <th class="text-left p-3 sm:p-4 font-bold text-sm sm:text-base">No</th>
+            <th class="text-left p-3 sm:p-4 font-bold text-sm sm:text-base">Tanggal</th>
+            <th class="text-left p-3 sm:p-4 font-bold text-sm sm:text-base">Gambar</th>
+            <th class="text-left p-3 sm:p-4 font-bold text-sm sm:text-base">Hasil</th>
+            <th class="text-left p-3 sm:p-4 font-bold text-sm sm:text-base">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block js_custom %}
+<script>
+  $(document).ready(function () {
+    let table = $('#tabelData').DataTable({
+      processing: true,
+      serverSide: true,
+      ajax: {
+        url: "{{ url_for('getKlasifikasis') }}",  // route ke controller history
+        type: "GET",
+        data: function (d) {
+          d.status = $('#filterStatus').val(); // kirim filter status
+        }
+      },
+      columns: [
+        { data: "no", className: "p-3 sm:p-4 text-sm sm:text-base" },
+        { data: "tanggal", className: "p-3 sm:p-4 text-sm sm:text-base" },
+        { data: "gambar", orderable: false, searchable: false, className: "p-3 sm:p-4" },
+        { data: "hasil", className: "p-3 sm:p-4 text-sm sm:text-base" },
+        { data: "aksi", orderable: false, searchable: false, className: "p-3 sm:p-4" }
+      ],
+      createdRow: function (row) {
+        $(row).addClass("border-b hover:bg-gray-50");
+      },
+      responsive: true,
+      dom: "Bfrtip",
+      language: {
+        search: "Cari:",
+        lengthMenu: "Tampilkan _MENU_ data",
+        info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+        paginate: {
+          first: "Awal",
+          last: "Akhir",
+          next: "→",
+          previous: "←"
+        }
+      }
+    });
+
+    // Event saat select filter berubah
+    $('#filterStatus').on('change', function () {
+      table.ajax.reload(); // reload datatable dengan filter baru
+    });
+
+    $(document).on("click", ".viewBtn", function (e) {
+      e.preventDefault();
+      const id = $(this).data("id");
+
+      $.ajax({
+        url: `/riwayat-klasifikasi/view/${id}`,  // route ke controller Flask
+        type: "GET",
+        dataType: "json",
+        success: function (res) {
+          console.log(res)
+          if (res.success) {
+            const data = res.data;
+
+            // Tentukan warna hasil
+            let resultColor = "gray";
+            if (data.kelas === "Layak") resultColor = "green";
+            else if (data.kelas === "Sedang") resultColor = "yellow";
+            else if (data.kelas === "Tidak Layak") resultColor = "red";
+
+            Swal.fire({
+              title: "Detail Klasifikasi",
+              html: `
+            <div class="text-left">
+              <div class="mb-4">
+                <strong>Tanggal:</strong> ${data.tanggal}
+              </div>
+              <div class="mb-4">
+                <strong>Gambar:</strong><br>
+                <img src="${data.image_url}" class="w-40 h-40 object-cover rounded-lg border mt-2" alt="preview">
+              </div>
+              <div class="mb-4">
+                <strong>Hasil:</strong>
+                <span class="px-3 py-1 rounded-full text-white text-sm font-semibold bg-${resultColor}-500">
+                  ${data.kelas}
+                </span>
+              </div>
+              <div class="mb-4">
+                <strong>Akurasi:</strong> ${data.akurasi}%
+              </div>
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <strong>Detail Analisis:</strong>
+                <ul class="mt-2 space-y-1 text-sm">
+                  <li>• HSV (hue_mean): ${data.hasil_klasifikasi.hue_mean}</li>
+                  <li>• HSV (sat_mean): ${data.hasil_klasifikasi.sat_mean}</li>
+                  <li>• HSV (val_mean): ${data.hasil_klasifikasi.val_mean}</li>
+                  <li>• GLCM (energi): ${data.hasil_klasifikasi.energi}</li>
+                  <li>• GLCM (homogenitas): ${data.hasil_klasifikasi.homogenitas}</li>
+                  <li>• GLCM (kontras): ${data.hasil_klasifikasi.kontras}</li>
+                  <li>• GLCM (korelasi): ${data.hasil_klasifikasi.korelasi}</li>
+                  <li>• GLCM (dismilaritas): ${data.hasil_klasifikasi.dismilaritas}</li>
+                  <li>• KNN Distance: ${data.jarak}</li>
+                </ul>
+              </div>
+            </div>
+          `,
+              confirmButtonText: "Tutup"
+            });
+          } else {
+            Swal.fire("Error", res.message, "error");
+          }
+        },
+        error: function (xhr) {
+          console.error(xhr.responseText);
+          let errorMsg = "Terjadi kesalahan, coba lagi.";
+          try {
+            const res = JSON.parse(xhr.responseText);
+            if (res.message) {
+              errorMsg = res.message;
+            }
+          } catch (e) {
+            console.error("Response bukan JSON valid:", xhr.responseText);
+          }
+          Toast.fire({
+            icon: 'error',
+            title: errorMsg
+          });
+        }
+      });
+    });
+
+    $(document).on("click", "#deleteAllBtn", function (e) {
+      e.preventDefault();
+
+      Swal.fire({
+        title: "Apakah anda yakin?",
+        text: "Semua data klasifikasi akan dihapus. Anda tidak dapat membatalkan.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Ya, Hapus",
+        cancelButtonText: "Batal",
+        confirmButtonColor: "#ef4444"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          $.ajax({
+            url: "{{ url_for('deleteAllKlasifikasi') }}",
+            type: "DELETE",
+            dataType: "json",
+            beforeSend: function () {
+              Swal.showLoading();
+            },
+            success: function (response) {
+              if (response.success) {
+                Toast.fire({
+                  icon: "success",
+                  title: response.message
+                });
+                $("#tabelData").DataTable().ajax.reload(null, false);
+              }
+            },
+            error: function (xhr) {
+              console.error(xhr.responseText);
+              let errorMsg = "Terjadi kesalahan, coba lagi.";
+              try {
+                const res = JSON.parse(xhr.responseText);
+                if (res.message) {
+                  errorMsg = res.message;
+                }
+              } catch (e) {
+                console.error("Response bukan JSON valid:", xhr.responseText);
+              }
+              Toast.fire({
+                icon: 'error',
+                title: errorMsg
+              });
+            },
+          });
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,29 @@
+<input type="hidden" id="userId" name="userId" value="{{ user.id if user else '' }}" />
+<div class="mb-4">
+    <label class="block text-gray-700 font-semibold mb-2 text-sm sm:text-base">Nama</label>
+    <input type="text" required
+        class="w-full px-3 sm:px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-retro-red focus:outline-none text-sm sm:text-base"
+        id="userName" name="userName" value="{{ user.nama if user else '' }}">
+</div>
+<div class="mb-4">
+    <label class="block text-gray-700 font-semibold mb-2 text-sm sm:text-base">Username</label>
+    <input type="text" required
+        class="w-full px-3 sm:px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-retro-red focus:outline-none text-sm sm:text-base"
+        id="userUsername" name="userUsername" value="{{ user.username if user else '' }}">
+</div>
+<div class="mb-4">
+    <label class="block text-gray-700 font-semibold mb-2 text-sm sm:text-base">Password</label>
+    <input type="password"
+        class="w-full px-3 sm:px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-retro-red focus:outline-none text-sm sm:text-base"
+        id="userPassword" name="userPassword" placeholder="Kosongkan jika tidak ingin mengganti password">
+</div>
+<div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4">
+    <button type="button" id="closeModalBtn"
+        class="px-4 sm:px-6 py-2 border-2 border-gray-300 rounded-lg font-semibold hover:bg-gray-50 text-sm sm:text-base">
+        Batal
+    </button>
+    <button type="submit"
+        class="bg-retro-red text-white px-4 sm:px-6 py-2 rounded-lg font-semibold retro-button text-sm sm:text-base">
+        Simpan
+    </button>
+</div>

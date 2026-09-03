@@ -1,0 +1,48 @@
+<div id="sidebar"
+    class="sidebar w-64 bg-white bg-opacity-90 backdrop-filter backdrop-blur-lg min-h-screen fixed left-0 top-20 retro-shadow-lg">
+    <div class="p-6">
+        <h2 class="text-xl font-bold text-retro-dark mb-6">Menu Admin</h2>
+        <nav class="space-y-2">
+            <a href="{{ url_for('dashboards') }}"
+                class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg {{ 'active' if active == 'dashboard' else '' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span class="font-semibold">Dashboard</span>
+            </a>
+            <a href="{{ url_for('penggunas') }}"
+                class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg {{ 'active' if active == 'pengguna' else '' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+                <span class="font-semibold">Pengguna</span>
+            </a>
+            <a href="{{ url_for('datasets') }}"
+                class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg {{ 'active' if active == 'dataset' else '' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                </svg>
+                <span class="font-semibold">Dataset</span>
+            </a>
+            <a href="{{ url_for('riwayatKlasifikasis') }}"
+                class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg {{ 'active' if active == 'riwayat' else '' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="font-semibold">Riwayat Klasifikasi</span>
+            </a>
+            <a href="{{ url_for('klasifikasis') }}"
+                class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg {{ 'active' if active == 'klasifikasi' else '' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span class="font-semibold">Klasifikasi</span>
+            </a>
+        </nav>
+    </div>
+</div>

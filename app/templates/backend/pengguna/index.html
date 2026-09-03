@@ -1,0 +1,224 @@
+{% extends "layouts/main.html" %} {% block title %}{{ title }}{% endblock %} {%
+block css_custom %}
+{% endblock %} {% block content %}
+<!-- Users Section -->
+<div id="users-content" class="animate-fade-in">
+  <div class="bg-white p-4 sm:p-8 rounded-2xl retro-card mb-6 sm:mb-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+      <h2 class="text-2xl sm:text-3xl font-bold text-retro-dark">Manajemen Pengguna</h2>
+      <button id="addBtn"
+        class="w-full sm:w-auto bg-retro-red text-white px-6 py-3 rounded-lg font-semibold retro-button">
+        Tambah Pengguna
+      </button>
+    </div>
+
+    <div class="overflow-x-auto scrollbar-thin">
+      <table id="tabelData" class="display w-full min-w-full">
+        <thead>
+          <tr class="bg-retro-cream">
+            <th class="text-left p-3 sm:p-4 font-bold text-sm sm:text-base">No</th>
+            <th class="text-left p-3 sm:p-4 font-bold text-sm sm:text-base">Nama</th>
+            <th class="text-left p-3 sm:p-4 font-bold text-sm sm:text-base">Username</th>
+            <th class="text-left p-3 sm:p-4 font-bold text-sm sm:text-base">Bergabung</th>
+            <th class="text-left p-3 sm:p-4 font-bold text-sm sm:text-base">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block js_custom %}
+<script>
+  $(document).ready(function () {
+    $('#tabelData').DataTable({
+      processing: true,
+      serverSide: true,
+      ajax: "{{ url_for('getPenggunas') }}",
+      columns: [
+        {
+          data: 'id',
+          render: function (data, type, row, meta) {
+            return `<td class="p-3 sm:p-4 text-sm sm:text-base">${meta.row + meta.settings._iDisplayStart + 1}</td>`;
+          }
+        },
+        {
+          data: 'name',
+          render: data => `<td class="p-3 sm:p-4 font-semibold text-sm sm:text-base">${data}</td>`
+        },
+        {
+          data: 'username',
+          render: data => `<td class="p-3 sm:p-4 text-sm sm:text-base">${data}</td>`
+        },
+        {
+          data: 'joined',
+          render: data => `<td class="p-3 sm:p-4 text-sm sm:text-base">${data}</td>`
+        },
+        {
+          data: 'action',
+          orderable: false,
+          searchable: false,
+          render: data => `<td class="p-3 sm:p-4">${data}</td>`
+        }
+      ],
+      createdRow: function (row) {
+        $(row).addClass('border-b hover:bg-gray-50');
+      },
+      responsive: true,
+      dom: 'Bfrtip',
+      language: {
+        search: "Cari:",
+        lengthMenu: "Tampilkan _MENU_ data",
+        info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+        paginate: {
+          first: "Awal",
+          last: "Akhir",
+          next: "→",
+          previous: "←"
+        }
+      }
+    });
+
+    // Open Add User Modal
+    $("#addBtn").click(function () {
+      $.ajax({
+        url: "{{ url_for('addPenggunas') }}",  // route Flask yang return HTML form
+        type: "GET",
+        dataType: "json",
+        cache: false,
+        success: function (result) {
+          if (result.success) {
+            $("#customModalForm").html(result.form);
+            $("#customModalTitle").text("Tambah Pengguna");
+            $("#customModalForm").attr("action", "{{ url_for('addPenggunas') }}");
+
+            // Tampilkan modal
+            $("#customModal").removeClass("hidden").addClass("show");
+          } else {
+            Swal.fire("Error", "Terjadi kesalahan, coba lagi.", "error");
+          }
+        },
+        error: function (xhr) {
+          console.error(xhr.responseText);
+          Swal.fire("Error", "Terjadi kesalahan, coba lagi.", "error");
+        },
+      });
+    });
+
+    $(document).on("click", ".editBtn", function () {
+      const userId = $(this).data("user");
+
+      $.ajax({
+        url: `/pengguna/edit/${userId}`,
+        type: "GET",
+        dataType: "json",
+        success: function (result) {
+          if (result.success) {
+            $("#customModalForm").html(result.form);
+            $("#customModalTitle").text("Edit Pengguna");
+            $("#customModalForm").attr("action", `/pengguna/edit/${userId}`);
+
+            // Tampilkan modal
+            $("#customModal").removeClass("hidden").addClass("show");
+          } else {
+            Swal.fire("Error", result.message || "Terjadi kesalahan", "error");
+          }
+        },
+        error: function (xhr) {
+          console.error(xhr.responseText);
+          Swal.fire("Error", "Terjadi kesalahan, coba lagi.", "error");
+        },
+      });
+    });
+
+    $(document).on("click", ".deleteBtn", function (e) {
+      e.preventDefault();
+
+      const userId = $(this).data("user");
+
+      Swal.fire({
+        title: "Apakah anda yakin?",
+        text: "Data pengguna ini akan di hapus!. Anda tidak dapat membatalkan.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Ya, Hapus",
+        cancelButtonText: "Batal",
+        confirmButtonColor: "#ef4444"
+      }).then(result => {
+        if (result.isConfirmed) {
+          $.ajax({
+            url: `/pengguna/delete/${userId}`,   // langsung tulis url dinamis
+            type: "DELETE",                      // konsisten dengan route
+            dataType: "json",
+          }).then(response => {
+            if (response.success) {
+              Toast.fire({
+                icon: "success",
+                title: "Pengguna berhasil dihapus"
+              });
+              $("#tabelData").DataTable().ajax.reload(null, false);
+            }
+          }).catch(error => {
+            Toast.fire({
+              icon: "error",
+              title: "Pengguna gagal dihapus"
+            });
+          });
+        }
+      });
+    });
+
+    // Tombol Batal di modal
+    $(document).on("click", "#closeModalBtn", function () {
+      $("#customModal").removeClass("show").addClass("hidden");
+    });
+
+
+    // Submit form dalam custom modal
+    $(document).on("submit", "#customModalForm", function (e) {
+      e.preventDefault();
+
+      const formData = $(this).serialize();
+
+      $.ajax({
+        url: $(this).attr("action"),
+        type: "POST",
+        data: formData,
+        dataType: "json",
+        success: function (response) {
+          if (response.success) {
+            Toast.fire({
+              icon: 'success',
+              title: response.message
+            });
+            // Tutup modal
+            $("#customModal").removeClass("show").addClass("hidden");
+            if ($.fn.DataTable.isDataTable("#tabelData")) {
+              $("#tabelData").DataTable().ajax.reload(null, false);
+            } else {
+              location.reload();
+            }
+          }
+        },
+        error: function (xhr) {
+          let errorMsg = "Terjadi kesalahan, coba lagi.";
+          try {
+            const res = JSON.parse(xhr.responseText);
+            if (res.message) {
+              errorMsg = res.message;
+            }
+          } catch (e) {
+            console.error("Response bukan JSON valid:", xhr.responseText);
+          }
+          Toast.fire({
+            icon: 'error',
+            title: errorMsg
+          });
+        },
+      });
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,429 @@
+{% extends "layouts/main.html" %} {% block title %}{{ title }}{% endblock %} {%
+block css_custom %}
+<style>
+    .result-card {
+        background: linear-gradient(145deg, #ffffff, #f8fafc);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .quality-badge {
+        background: linear-gradient(45deg, var(--bg-color), var(--bg-color-light));
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+        transition: all 0.3s ease;
+    }
+
+    .quality-badge:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .feature-item {
+        background: rgba(255, 255, 255, 0.7);
+        border-left: 4px solid var(--accent-color);
+        transition: all 0.3s ease;
+    }
+
+    .feature-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .progress-ring {
+        transform: rotate(-90deg);
+        transition: stroke-dasharray 2s ease-in-out;
+    }
+
+    .animate-progress {
+        animation: progressFill 2s ease-in-out forwards;
+    }
+
+    @keyframes progressFill {
+        from {
+            stroke-dasharray: 0 314;
+        }
+    }
+
+    .pulse-glow {
+        animation: pulseGlow 2s infinite;
+    }
+
+    @keyframes pulseGlow {
+
+        0%,
+        100% {
+            box-shadow: 0 0 20px rgba(var(--glow-color), 0.3);
+        }
+
+        50% {
+            box-shadow: 0 0 30px rgba(var(--glow-color), 0.6);
+        }
+    }
+
+    .slide-up {
+        animation: slideUp 0.6s ease-out forwards;
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .bounce-in {
+        animation: bounceIn 0.8s ease-out forwards;
+    }
+
+    @keyframes bounceIn {
+        0% {
+            opacity: 0;
+            transform: scale(0.3);
+        }
+
+        50% {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        70% {
+            transform: scale(0.9);
+        }
+
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Classification Section -->
+<div id="classify-content" class="animate-fade-in">
+    <div class="bg-white p-4 sm:p-8 rounded-2xl retro-card mb-6 sm:mb-8">
+        <div class="text-center mb-6 sm:mb-8">
+            <h2 class="text-2xl sm:text-4xl font-bold text-retro-red mb-4">Klasifikasi Kualitas Garam</h2>
+            <p class="text-lg sm:text-xl text-gray-600">Upload gambar garam untuk analisis kualitas
+                menggunakan metode Machine Learning</p>
+        </div>
+
+        <div class="upload-area rounded-xl p-8 sm:p-16 text-center mb-6 sm:mb-8" id="classifyUploadArea">
+            <div class="mb-6 animate-bounce">
+                <svg class="mx-auto h-16 w-16 sm:h-20 sm:w-20 text-retro-red" fill="none" stroke="currentColor"
+                    viewBox="0 0 48 48">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" />
+                </svg>
+            </div>
+            <p class="text-lg sm:text-2xl font-bold text-retro-red mb-3">Klik untuk upload atau drag & drop
+            </p>
+            <p class="text-gray-600 text-sm sm:text-lg mb-4">Format: JPG, PNG, JPEG (Maksimal: 5MB)</p>
+            <input type="file" id="classifyImageInput" accept="image/*" class="hidden">
+        </div>
+
+        <button id="classifyUploadBtn"
+            class="w-full bg-gradient-to-r from-retro-red to-retro-pink text-white py-4 sm:py-5 px-6 sm:px-8 rounded-xl font-bold text-lg sm:text-2xl retro-button mb-6 sm:mb-8">
+            Pilih Gambar Garam
+        </button>
+
+        <div id="classifyResults" class="hidden">
+            <!-- Enhanced classification results will be inserted here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js_custom %}
+<script>
+    $(document).ready(function () {
+        const imageInput = $("#classifyImageInput");
+        const uploadArea = $("#classifyUploadArea");
+        const uploadBtn = $("#classifyUploadBtn");
+        const results = $("#classifyResults");
+
+        // Trigger input file
+        uploadBtn.on("click", function () {
+            imageInput.click();
+        });
+
+        // Drag & drop
+        uploadArea.on("dragover", function (e) {
+            e.preventDefault();
+            $(this).addClass("border-retro-red");
+        }).on("dragleave", function (e) {
+            e.preventDefault();
+            $(this).removeClass("border-retro-red");
+        }).on("drop", function (e) {
+            e.preventDefault();
+            $(this).removeClass("border-retro-red");
+            const files = e.originalEvent.dataTransfer.files;
+            if (files.length > 0) {
+                imageInput[0].files = files;
+                startClassification(files[0]);
+            }
+        });
+
+        // Change input
+        imageInput.on("change", function () {
+            if (this.files && this.files[0]) {
+                startClassification(this.files[0]);
+            }
+        });
+
+        // Enhanced classification function
+        function startClassification(file) {
+            if (!file) return;
+
+            // Validasi ekstensi
+            const validTypes = ["image/jpeg", "image/png", "image/jpg"];
+            if (!validTypes.includes(file.type)) {
+                Swal.fire({
+                    title: "Format Tidak Didukung",
+                    text: "Gunakan format JPG, JPEG, atau PNG.",
+                    icon: "warning",
+                    confirmButtonColor: "#ef4444"
+                });
+                return;
+            }
+
+            // Validasi size
+            if (file.size > 5 * 1024 * 1024) {
+                Swal.fire({
+                    title: "File Terlalu Besar",
+                    text: "Ukuran maksimal 5MB.",
+                    icon: "warning",
+                    confirmButtonColor: "#ef4444"
+                });
+                return;
+            }
+
+            // Enhanced loading state with progress
+            results.html(`
+                <div class="result-card rounded-2xl p-8 text-center">
+                    <div class="mb-6">
+                        <div class="relative inline-block">
+                            <svg class="w-24 h-24 progress-ring" viewBox="0 0 120 120">
+                                <circle cx="60" cy="60" r="50" fill="none" stroke="#e5e7eb" stroke-width="8"/>
+                                <circle cx="60" cy="60" r="50" fill="none" stroke="#ef4444" stroke-width="8" 
+                                        stroke-dasharray="0 314" class="animate-progress" id="progressCircle"/>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="text-2xl animate-spin">🔄</span>
+                            </div>
+                        </div>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">Menganalisis Kualitas Garam</h3>
+                    <p id="loadingText" class="text-gray-600 text-lg font-medium">🔄 Memulai analisis...</p>
+                    <div class="mt-6">
+                        <div class="bg-gray-200 rounded-full h-2 mb-2">
+                            <div id="progressBar" class="bg-gradient-to-r from-retro-red to-retro-pink h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <p class="text-sm text-gray-500">Mohon tunggu sebentar...</p>
+                    </div>
+                </div>
+            `).removeClass("hidden");
+
+            const analysisSteps = [
+                { text: '🔄 Memproses gambar garam...', progress: 15 },
+                { text: '🎨 Mengekstrak fitur HSV...', progress: 30 },
+                { text: '🔬 Menganalisis tekstur GLCM...', progress: 50 },
+                { text: '🧠 Menjalankan algoritma KNN...', progress: 70 },
+                { text: '📊 Menghitung skor kualitas...', progress: 85 },
+                { text: '✨ Finalisasi hasil...', progress: 100 }
+            ];
+
+            let currentStep = 0;
+            const stepInterval = setInterval(() => {
+                if (currentStep < analysisSteps.length) {
+                    const step = analysisSteps[currentStep];
+                    $("#loadingText").text(step.text);
+                    $("#progressBar").css('width', step.progress + '%');
+
+                    // Update circular progress
+                    const circumference = 2 * Math.PI * 50;
+                    const offset = circumference - (step.progress / 100) * circumference;
+                    $("#progressCircle").css('stroke-dasharray', `${(step.progress / 100) * circumference} ${circumference}`);
+
+                    currentStep++;
+                } else {
+                    clearInterval(stepInterval);
+                }
+            }, 800);
+
+            // Create preview of uploaded image
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                window.uploadedImageSrc = e.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            // Ajax request
+            const formData = new FormData();
+            formData.append("image", file);
+
+            $.ajax({
+                url: "{{ url_for('homeKlasifikasis') }}",
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    clearInterval(stepInterval);
+
+                    setTimeout(() => {
+                        if (res.success) {
+                            displayEnhancedResult(res.data);
+                        } else {
+                            Swal.fire({
+                                title: "Klasifikasi Gagal",
+                                text: res.message || "Terjadi kesalahan saat menganalisis gambar",
+                                icon: "error",
+                                confirmButtonColor: "#ef4444"
+                            });
+                            results.addClass("hidden");
+                        }
+                    }, 1000);
+                },
+                error: function (xhr) {
+                    clearInterval(stepInterval);
+                    Swal.fire({
+                        title: "Error Server",
+                        text: "Terjadi kesalahan pada server. Silakan coba lagi.",
+                        icon: "error",
+                        confirmButtonColor: "#ef4444"
+                    });
+                    results.addClass("hidden");
+                }
+            });
+        }
+
+        // Enhanced result display function
+        function displayEnhancedResult(data) {
+            const qualityConfig = {
+                "Layak": {
+                    bgColor: "bg-green-500",
+                    bgColorLight: "bg-green-400",
+                    glowColor: "34, 197, 94",
+                    accentColor: "#22c55e",
+                    emoji: "🥇",
+                    icon: "✅",
+                    title: "Kualitas Premium",
+                    desc: "Garam dengan kualitas premium. Kristal sempurna, warna optimal, dan tekstur halus yang memenuhi standar konsumsi.",
+                    recommendation: "Sangat cocok untuk konsumsi langsung dan keperluan masak premium.",
+                    score: 95
+                },
+                "Sedang": {
+                    bgColor: "bg-yellow-500",
+                    bgColorLight: "bg-yellow-400",
+                    glowColor: "234, 179, 8",
+                    accentColor: "#eab308",
+                    emoji: "🥈",
+                    icon: "⚠️",
+                    title: "Kualitas Standar",
+                    desc: "Garam kualitas standar dengan karakteristik baik. Kristal normal, warna sesuai, tekstur sedang.",
+                    recommendation: "Cocok untuk penggunaan sehari-hari dengan sedikit pengolahan tambahan.",
+                    score: 75
+                },
+                "Tidak Layak": {
+                    bgColor: "bg-red-500",
+                    bgColorLight: "bg-red-400",
+                    glowColor: "239, 68, 68",
+                    accentColor: "#ef4444",
+                    emoji: "⚠️",
+                    icon: "❌",
+                    title: "Kualitas Rendah",
+                    desc: "Kualitas rendah dengan beberapa parameter tidak memenuhi standar. Perlu perbaikan sebelum konsumsi.",
+                    recommendation: "Sebaiknya dilakukan pengolahan atau penyaringan lebih lanjut sebelum digunakan.",
+                    score: 45
+                }
+            };
+
+            const config = qualityConfig[data.kelas] || qualityConfig["Tidak Layak"];
+            const confidenceScore = data.confidence || config.score;
+
+            results.html(`
+                <div class="result-card rounded-2xl p-6 sm:p-8 slide-up">
+                    <!-- Header Result -->
+                    <div class="text-center mb-8">
+                        <div class="quality-badge inline-block px-6 py-3 rounded-full text-white text-xl sm:text-2xl font-bold mb-4 pulse-glow bounce-in" 
+                             style="--bg-color: ${config.bgColor.replace('bg-', '')}; --bg-color-light: ${config.bgColorLight.replace('bg-', '')}; --glow-color: ${config.glowColor};">
+                            <span class="text-3xl mr-2">${config.emoji}</span>
+                            ${data.kelas}
+                        </div>
+                        <h3 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">${config.title}</h3>
+                        <p class="text-gray-600 text-lg">${config.desc}</p>
+                    </div>
+
+                    <!-- Image Preview -->
+                    <div class="mb-8">
+                        <h4 class="text-xl font-semibold text-gray-800 flex items-center mb-4">
+                            <span class="text-2xl mr-2">📸</span>
+                            Gambar yang Dianalisis
+                        </h4>
+                        <div class="relative rounded-xl overflow-hidden shadow-lg max-w-md mx-auto">
+                            <img src="${window.uploadedImageSrc}" alt="Uploaded Salt" 
+                                 class="w-full h-64 object-cover">
+                            <div class="absolute top-3 right-3">
+                                <span class="${config.bgColor} text-white px-3 py-2 rounded-full text-sm font-bold">
+                                    ${config.icon} ${data.kelas}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recommendation Section -->
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 mb-6">
+                        <h4 class="text-xl font-semibold text-gray-800 mb-3 flex items-center">
+                            <span class="text-2xl mr-2">💡</span>
+                            Rekomendasi
+                        </h4>
+                        <p class="text-gray-700 leading-relaxed">${config.recommendation}</p>
+                    </div>
+
+                    <!-- Action Button -->
+                    <div class="text-center mb-6">
+                        <button onclick="location.reload()" 
+                                class="bg-gradient-to-r from-retro-red to-retro-pink text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
+                            <span class="mr-2">🔄</span>
+                            Analisis Gambar Lain
+                        </button>
+                    </div>
+
+                    <!-- Success Animation -->
+                    <div class="text-center">
+                        <div class="inline-block text-4xl animate-bounce">
+                            🎉
+                        </div>
+                        <p class="text-gray-600 mt-2">Analisis berhasil diselesaikan!</p>
+                    </div>
+                </div>
+            `);
+
+            // Add CSS variables for dynamic styling
+            $('<style>')
+                .prop('type', 'text/css')
+                .html(`
+                    .result-card {
+                        --primary-color: ${config.accentColor};
+                        --glow-color: ${config.glowColor};
+                    }
+                `)
+                .appendTo('head');
+
+            // Trigger animations
+            setTimeout(() => {
+                $('.slide-up').addClass('slide-up');
+                $('.bounce-in').addClass('bounce-in');
+            }, 100);
+        }
+
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,37 @@
+<div class="upload-area rounded-lg p-6 sm:p-8 text-center mb-6" id="datasetUploadArea">
+    <svg class="mx-auto h-10 sm:h-12 w-10 sm:w-12 text-retro-red mb-4" fill="none" stroke="currentColor"
+        viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+    </svg>
+    <p class="font-bold text-retro-red mb-2 text-sm sm:text-base">Drop files here or click to upload</p>
+    <p class="text-xs sm:text-sm text-gray-500">Multiple JPG, PNG files supported (Max: 5MB each)</p>
+    <input type="file" id="datasetFileInput" accept="image/*" multiple class="hidden">
+</div>
+
+<!-- Image Preview Section -->
+<div id="imagePreviewSection" class="hidden mb-6">
+    <h4 class="font-semibold text-gray-700 mb-3 text-sm sm:text-base">Preview Gambar:</h4>
+    <div id="imagePreviewGrid" class="preview-grid scrollbar-thin"></div>
+</div>
+
+<div class="mb-4 sm:mb-6">
+    <label class="block text-gray-700 font-semibold mb-2 text-sm sm:text-base">Label Kualitas</label>
+    <select id="qualityLabel"
+        class="w-full px-3 sm:px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-retro-red focus:outline-none text-sm sm:text-base">
+        <option value="layak">Layak</option>
+        <option value="sedang">Sedang</option>
+        <option value="tidak_layak">Tidak Layak</option>
+    </select>
+</div>
+<div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4">
+    <button type="button" id="closeModalBtn"
+        class="px-4 sm:px-6 py-2 border-2 border-gray-300 rounded-lg font-semibold hover:bg-gray-50 text-sm sm:text-base">
+        Batal
+    </button>
+    <button type="submit" id="uploadDatasetSubmitBtn"
+        class="bg-retro-red text-white px-4 sm:px-6 py-2 rounded-lg font-semibold retro-button text-sm sm:text-base"
+        disabled>
+        Upload
+    </button>
+</div>

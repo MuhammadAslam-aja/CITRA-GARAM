@@ -1,0 +1,21 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+
+# Large backup archives (>100MB blocked by GitHub)
+projek.zip
+citra-garam-knn-main.zip
+
+# Environment variables
+.env
+
+# Temporary folders
+None/
+.vscode/

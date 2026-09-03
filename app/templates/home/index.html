@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>GaramCitra | Sistem Klasifikasi Kualitas Garam</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script>
+		tailwind.config = {
+			theme: {
+				extend: {
+					colors: {
+						'retro-red': '#DC143C',
+						'retro-pink': '#FF6B6B',
+						'retro-orange': '#FF8E53',
+						'retro-yellow': '#FFA726',
+						'retro-cream': '#FFF8E1',
+						'retro-dark': '#2C1810'
+					},
+					fontFamily: {
+						'retro': ['Georgia', 'serif']
+					},
+					animation: {
+						'float': 'float 3s ease-in-out infinite',
+						'pulse-slow': 'pulse 3s infinite',
+						'gradient': 'gradient 15s ease infinite',
+						'bounce-slow': 'bounce 2s infinite',
+						'spin-slow': 'spin 2s linear infinite'
+					},
+					keyframes: {
+						float: {
+							'0%, 100%': { transform: 'translateY(0px)' },
+							'50%': { transform: 'translateY(-10px)' }
+						},
+						gradient: {
+							'0%, 100%': { 'background-position': '0% 50%' },
+							'50%': { 'background-position': '100% 50%' }
+						}
+					}
+				}
+			}
+		}
+	</script>
+	<style>
+		.retro-shadow {
+			box-shadow: 8px 8px 0px #B71C1C;
+		}
+
+		.retro-shadow-lg {
+			box-shadow: 12px 12px 0px #B71C1C;
+		}
+
+		.retro-button {
+			position: relative;
+			transition: all 0.2s;
+			box-shadow: 4px 4px 0px #B71C1C;
+			overflow: hidden;
+		}
+
+		.retro-button::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: -100%;
+			width: 100%;
+			height: 100%;
+			background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+			transition: left 0.5s;
+		}
+
+		.retro-button:hover::before {
+			left: 100%;
+		}
+
+		.retro-button:hover {
+			transform: translate(2px, 2px);
+			box-shadow: 2px 2px 0px #B71C1C;
+		}
+
+		.retro-button.loading {
+			background: #999 !important;
+			cursor: not-allowed;
+			pointer-events: none;
+		}
+
+		.retro-button.loading::before {
+			display: none;
+		}
+
+		.retro-card {
+			box-shadow: 6px 6px 0px #D32F2F;
+			transition: all 0.3s ease;
+		}
+
+		.retro-card:hover {
+			transform: translateY(-3px);
+			box-shadow: 9px 9px 0px #D32F2F;
+		}
+
+		.upload-area {
+			border: 3px dashed #DC143C;
+			transition: all 0.3s;
+			background: linear-gradient(45deg, rgba(220, 20, 60, 0.05), rgba(255, 255, 255, 0.05));
+		}
+
+		.upload-area:hover {
+			border-color: #B71C1C;
+			background: linear-gradient(45deg, rgba(220, 20, 60, 0.1), rgba(255, 107, 107, 0.05));
+			transform: scale(1.02);
+		}
+
+		.upload-area.drag-over {
+			background: linear-gradient(45deg, rgba(220, 20, 60, 0.15), rgba(255, 107, 107, 0.1));
+			border-color: #B71C1C;
+			transform: scale(1.05);
+		}
+
+		.gradient-bg {
+			background: linear-gradient(-45deg, #DC143C, #FF6B6B, #FF8E53, #FFA726);
+			background-size: 400% 400%;
+			animation: gradient 15s ease infinite;
+		}
+
+		.glass-effect {
+			background: rgba(255, 255, 255, 0.1);
+			backdrop-filter: blur(10px);
+			border: 1px solid rgba(255, 255, 255, 0.2);
+		}
+
+		.glow {
+			box-shadow: 0 0 20px rgba(220, 20, 60, 0.3);
+		}
+
+		.tech-pattern {
+			background-image:
+				radial-gradient(circle at 1px 1px, rgba(220, 20, 60, 0.15) 1px, transparent 0);
+			background-size: 20px 20px;
+		}
+
+		@keyframes shimmer {
+			0% {
+				background-position: -200% center;
+			}
+
+			100% {
+				background-position: 200% center;
+			}
+		}
+
+		.shimmer {
+			background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+			background-size: 200% 100%;
+			animation: shimmer 2s infinite;
+		}
+
+		.floating-shape {
+			position: absolute;
+			background: rgba(220, 20, 60, 0.1);
+			border-radius: 50%;
+			animation: float 6s ease-in-out infinite;
+		}
+
+		.floating-shape:nth-child(1) {
+			top: 10%;
+			left: 10%;
+			width: 80px;
+			height: 80px;
+			animation-delay: 0s;
+		}
+
+		.floating-shape:nth-child(2) {
+			top: 70%;
+			right: 10%;
+			width: 120px;
+			height: 120px;
+			animation-delay: 2s;
+		}
+
+		.floating-shape:nth-child(3) {
+			bottom: 20%;
+			left: 15%;
+			width: 60px;
+			height: 60px;
+			animation-delay: 4s;
+		}
+
+		/* Login Loading Styles */
+		.login-spinner {
+			width: 20px;
+			height: 20px;
+			border: 2px solid #ffffff40;
+			border-top: 2px solid #ffffff;
+			border-radius: 50%;
+			animation: spin 1s linear infinite;
+		}
+
+		.modal-overlay.fade-in {
+			animation: fadeIn 0.3s ease-out;
+		}
+
+		@keyframes fadeIn {
+			from {
+				opacity: 0;
+			}
+
+			to {
+				opacity: 1;
+			}
+		}
+
+		@keyframes spin {
+			0% {
+				transform: rotate(0deg);
+			}
+
+			100% {
+				transform: rotate(360deg);
+			}
+		}
+
+		.input-loading {
+			background: rgba(0, 0, 0, 0.05);
+			pointer-events: none;
+		}
+
+		.pulse-border {
+			animation: pulse-border 2s infinite;
+		}
+
+		@keyframes pulse-border {
+
+			0%,
+			100% {
+				border-color: #DC143C;
+			}
+
+			50% {
+				border-color: #FF6B6B;
+			}
+		}
+	</style>
+	<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.3/dist/sweetalert2.min.css" rel="stylesheet" />
+</head>
+
+<body class="bg-retro-cream min-h-screen font-retro overflow-x-hidden">
+	<!-- Navigation -->
+	<nav class="fixed top-0 w-full z-50 glass-effect">
+		<div class="container mx-auto px-6 py-4">
+			<div class="flex justify-between items-center">
+				<div class="flex items-center space-x-3">
+					<div class="w-10 h-10 bg-retro-red rounded-full flex items-center justify-center">
+						<span class="text-white font-bold text-lg">GC</span>
+					</div>
+					<h1 class="text-2xl font-bold text-retro-dark">GaramCitra</h1>
+				</div>
+
+				<div class="flex items-center space-x-4">
+					{% if current_user.is_authenticated %}
+					<!-- dashboard -->
+					<a href="{{ url_for('dashboards') }}" id="dashboard-button"
+						class="bg-retro-red text-white px-6 py-2 rounded-full font-semibold retro-button hover:bg-red-600 transition-colors">
+						Dashboard
+					</a>
+					{% else %}
+					<button id="loginBtn"
+						class="bg-retro-red text-white px-6 py-2 rounded-full font-semibold retro-button hover:bg-red-600 transition-colors"
+						onclick="toggleModal()">
+						Login
+					</button>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+	</nav>
+
+	<!-- Header -->
+	<header class="gradient-bg text-white py-20 pt-32 retro-shadow-lg relative overflow-hidden">
+		<!-- Floating Shapes -->
+		<div class="floating-shape"></div>
+		<div class="floating-shape"></div>
+		<div class="floating-shape"></div>
+
+		<div class="absolute inset-0 tech-pattern opacity-30"></div>
+		<div class="container mx-auto px-6 relative z-10">
+			<div class="text-center">
+				<h1 class="text-7xl font-bold mb-6 animate-pulse-slow">GaramCitra</h1>
+				<div class="relative">
+					<p class="text-3xl font-medium mb-8 leading-relaxed">
+						Sistem Klasifikasi Kualitas Garam<br>
+						<span class="text-retro-cream shimmer">dengan Metode Machine Learning</span>
+					</p>
+				</div>
+
+				<div class="mt-8 flex flex-wrap justify-center gap-4">
+					<span class="glass-effect text-white px-6 py-3 rounded-full font-semibold animate-float glow">
+						🧠 KNN Algorithm
+					</span>
+					<span class="glass-effect text-white px-6 py-3 rounded-full font-semibold animate-float glow"
+						style="animation-delay: 0.5s;">
+						🎨 HSV Color Space
+					</span>
+					<span class="glass-effect text-white px-6 py-3 rounded-full font-semibold animate-float glow"
+						style="animation-delay: 1s;">
+						🔬 GLCM Texture
+					</span>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<!-- Hero Section -->
+	<section class="py-20 bg-gradient-to-b from-retro-cream to-white relative">
+		<div class="container mx-auto px-6">
+			<div class="text-center mb-20">
+				<div class="inline-block p-4 bg-retro-red rounded-full mb-6 animate-pulse">
+					<svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+							d="M13 10V3L4 14h7v7l9-11h-7z" />
+					</svg>
+				</div>
+				<h2 class="text-5xl font-bold text-retro-dark mb-8 leading-tight">
+					Klasifikasi Kualitas Garam dengan<br>
+					<span class="text-retro-red">Metode Machine Learning</span>
+				</h2>
+				<p class="text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed">
+					Revolusi industri garam dengan sistem canggih yang menggunakan kombinasi algoritma
+					<strong>K-Nearest Neighbor (KNN)</strong>, analisis ruang warna <strong>HSV</strong>,
+					dan <strong>Gray Level Co-occurrence Matrix (GLCM)</strong> untuk mengklasifikasikan
+					kualitas garam secara akurat, cepat, dan otomatis.
+				</p>
+			</div>
+
+			<!-- Upload Section -->
+			<div class="max-w-5xl mx-auto">
+				<div class="bg-white p-10 rounded-2xl retro-card mb-8 relative overflow-hidden">
+					<div
+						class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-retro-red via-retro-pink to-retro-orange">
+					</div>
+
+					<div class="text-center mb-8">
+						<h3 class="text-4xl font-bold text-retro-red mb-4">🔍 Upload & Klasifikasi Gambar Garam</h3>
+					</div>
+
+					<!-- Classification Form -->
+					<form id="classificationForm" enctype="multipart/form-data">
+						<div class="upload-area rounded-xl p-16 text-center mb-8" id="uploadArea">
+							<div class="mb-6 animate-bounce">
+								<svg class="mx-auto h-20 w-20 text-retro-red" fill="none" stroke="currentColor"
+									viewBox="0 0 48 48">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+										d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" />
+								</svg>
+							</div>
+							<p class="text-2xl font-bold text-retro-red mb-3">Klik untuk upload atau drag & drop</p>
+							<p class="text-gray-600 text-lg mb-4">Format: JPG, PNG, JPEG (Maksimal: 5MB)</p>
+							<div class="text-sm text-gray-500">
+								💡 <strong>Tips:</strong> Gunakan gambar dengan pencahayaan yang baik untuk hasil
+								optimal
+							</div>
+							<input type="file" id="imageInput" name="image" accept="image/*" class="hidden" required>
+						</div>
+
+						<button id="uploadBtn" type="button"
+							class="w-full bg-gradient-to-r from-retro-red to-retro-pink text-white py-5 px-8 rounded-xl font-bold text-2xl retro-button mb-8 relative overflow-hidden">
+							📷 Pilih Gambar Garam
+						</button>
+
+						<!-- Preview Section -->
+						<div id="previewSection" class="hidden">
+							<div
+								class="bg-gradient-to-br from-gray-50 to-white p-8 rounded-xl mb-8 border-2 border-retro-cream">
+								<h4 class="text-2xl font-bold text-retro-dark mb-6 text-center">📊 Preview & Hasil
+									Analisis
+								</h4>
+
+								<div class="grid lg:grid-cols-2 gap-8">
+									<!-- Original Image -->
+									<div class="text-center">
+										<div class="bg-white p-4 rounded-xl shadow-lg retro-card">
+											<p class="font-bold text-gray-700 mb-4 text-lg">🖼️ Gambar Original</p>
+											<img id="originalPreview"
+												class="w-full max-w-sm mx-auto rounded-lg shadow-md">
+										</div>
+									</div>
+
+									<!-- Analysis Results -->
+									<div class="text-center">
+										<div class="bg-white p-6 rounded-xl shadow-lg retro-card">
+											<p class="font-bold text-gray-700 mb-4 text-lg">🎯 Hasil Klasifikasi</p>
+
+											<div id="loadingSpinner" class="hidden text-retro-red mb-6">
+												<div class="flex flex-col items-center">
+													<svg class="animate-spin h-12 w-12 mb-4" fill="none"
+														viewBox="0 0 24 24">
+														<circle class="opacity-25" cx="12" cy="12" r="10"
+															stroke="currentColor" stroke-width="4"></circle>
+														<path class="opacity-75" fill="currentColor"
+															d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+														</path>
+													</svg>
+													<p class="text-lg font-semibold animate-pulse" id="loadingText">🔄
+														Proses klasifikasi gambar...
+													</p>
+													<p class="text-sm text-gray-500 mt-2">Proses klasifikasi sedang
+														berjalan</p>
+												</div>
+											</div>
+
+											<div id="resultContent" class="hidden space-y-4">
+												<div class="mb-6">
+													<span id="qualityBadge"
+														class="inline-block px-6 py-3 rounded-full text-white font-bold text-xl"></span>
+												</div>
+												<div class="grid grid-cols-1 gap-4 text-left bg-gray-50 p-4 rounded-lg">
+													<!-- <div class="flex justify-between items-center">
+														<span class="font-semibold text-gray-700">🎯 Akurasi:</span>
+														<span id="accuracy"
+															class="font-bold text-retro-red text-lg">-</span>
+													</div> -->
+													<div class="flex justify-between items-center">
+														<span class="font-semibold text-gray-700">📏 Jarak KNN:</span>
+														<span id="distance" class="font-bold text-blue-600">-</span>
+													</div>
+													<div class="flex justify-between items-center">
+														<span class="font-semibold text-gray-700">🎨 Rata-rata
+															HSV:</span>
+														<span id="hsvAvg" class="font-bold text-green-600">-</span>
+													</div>
+													<div class="flex justify-between items-center">
+														<span class="font-semibold text-gray-700">🔬 Rata-rata
+															GLCM:</span>
+														<span id="glcmAvg" class="font-bold text-purple-600">-</span>
+													</div>
+												</div>
+												<div class="mt-4 text-left bg-blue-50 p-4 rounded-lg">
+													<p class="font-semibold text-gray-700 mb-2">📋 Keterangan:</p>
+													<p id="classificationDescription" class="text-gray-600 text-sm">-
+													</p>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<button id="analyzeBtn" type="submit"
+								class="w-full bg-gradient-to-r from-retro-orange to-retro-yellow text-white py-4 px-8 rounded-xl font-bold text-xl retro-button relative overflow-hidden">
+								🚀 Mulai Klasifikasi Kualitas Garam
+							</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Classification Info -->
+	<section class="py-20 gradient-bg text-white relative overflow-hidden">
+		<div class="absolute inset-0 tech-pattern opacity-20"></div>
+		<div class="container mx-auto px-6 relative z-10">
+			<div class="text-center mb-16">
+				<div class="inline-block p-4 glass-effect rounded-full mb-6">
+					<svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+							d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+					</svg>
+				</div>
+				<h2 class="text-5xl font-bold mb-8">🏆 Klasifikasi Kualitas Premium</h2>
+				<p class="text-2xl opacity-90 max-w-3xl mx-auto leading-relaxed">
+					Sistem kami mengklasifikasikan garam ke dalam tiga kategori kualitas utama
+					berdasarkan analisis komprehensif fitur visual dan tekstural
+				</p>
+			</div>
+
+			<div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+				<div class="glass-effect p-8 rounded-2xl text-center hover:scale-105 transition-transform group">
+					<div class="text-6xl mb-6 group-hover:animate-bounce">🥇</div>
+					<div class="text-4xl font-bold mb-3">Layak</div>
+					<div class="text-lg opacity-80 mb-4">Kualitas Premium</div>
+					<div class="text-sm opacity-70">
+						Kristal sempurna • Warna optimal • Tekstur halus
+					</div>
+				</div>
+
+				<div class="glass-effect p-8 rounded-2xl text-center hover:scale-105 transition-transform group">
+					<div class="text-6xl mb-6 group-hover:animate-bounce">🥈</div>
+					<div class="text-4xl font-bold mb-3">Sedang</div>
+					<div class="text-lg opacity-80 mb-4">Kualitas Standar</div>
+					<div class="text-sm opacity-70">
+						Kristal baik • Warna normal • Tekstur sedang
+					</div>
+				</div>
+
+				<div class="glass-effect p-8 rounded-2xl text-center hover:scale-105 transition-transform group">
+					<div class="text-6xl mb-6 group-hover:animate-bounce">🥉</div>
+					<div class="text-4xl font-bold mb-3">Tidak</div>
+					<div class="text-lg opacity-80 mb-4">Kualitas Rendah</div>
+					<div class="text-sm opacity-70">
+						Perlu perbaikan • Analisis lebih lanjut
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Footer -->
+	<footer class="bg-retro-dark text-white py-16 relative">
+		<div class="container mx-auto px-6">
+			<div class="text-center">
+				<div class="flex justify-center items-center mb-6">
+					<div class="w-16 h-16 bg-retro-red rounded-full flex items-center justify-center mr-4">
+						<span class="text-white font-bold text-2xl">GC</span>
+					</div>
+					<h3 class="text-4xl font-bold">GaramCitra</h3>
+				</div>
+				<p class="text-retro-cream text-xl mb-8 max-w-2xl mx-auto">
+					Revolusi industri garam Indonesia dengan sistem canggih yang menggunakan kombinasi teknologi
+					visual dan analisis data untuk mengklasifikasikan kualitas garam.
+				</p>
+
+				<div class="border-t border-gray-600 pt-8">
+					<p class="text-sm opacity-75">
+						©
+						<script>document.write(new Date().getFullYear())</script> Development by RzyDev
+				</div>
+			</div>
+		</div>
+	</footer>
+
+	<!-- Enhanced Login Modal with Loading -->
+	<div id="loginModal"
+		class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 modal-overlay">
+		<div class="bg-white rounded-2xl retro-card max-w-md w-full p-8 relative">
+			<button id="closeModal" onclick="toggleModal()"
+				class="absolute top-4 right-4 text-gray-500 hover:text-red-500 transition-colors">
+				<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+				</svg>
+			</button>
+
+			<div class="text-center mb-8">
+				<div class="w-16 h-16 bg-retro-red rounded-full flex items-center justify-center mx-auto mb-4">
+					<span class="text-white font-bold text-2xl">GC</span>
+				</div>
+				<h2 class="text-3xl font-bold text-retro-dark">Login Sistem</h2>
+				<p class="text-gray-600 mt-2">Silahkan masuk menggunakan akun Anda</p>
+			</div>
+
+			<!-- Login Loading Overlay -->
+			<div id="loginLoadingOverlay"
+				class="absolute inset-0 bg-white bg-opacity-90 rounded-2xl hidden flex items-center justify-center z-10">
+				<div class="text-center">
+					<div class="login-spinner mb-4 mx-auto"></div>
+					<p class="text-retro-red font-semibold text-lg" id="loginLoadingText">Memverifikasi akun...</p>
+					<p class="text-gray-500 text-sm mt-2">Mohon tunggu sebentar</p>
+				</div>
+			</div>
+
+			<form class="space-y-6" id="login-form">
+				<div>
+					<label class="block text-gray-700 font-semibold mb-2">Username</label>
+					<input type="text"
+						class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-retro-red focus:outline-none transition-colors"
+						placeholder="Masukkan Username" id="inputUsername" name="inputUsername">
+				</div>
+
+				<div>
+					<label class="block text-gray-700 font-semibold mb-2">Password</label>
+					<input type="password"
+						class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-retro-red focus:outline-none transition-colors"
+						placeholder="Masukkan password" id="inputPassword" name="inputPassword">
+				</div>
+
+				<button type="submit" id="loginSubmitBtn"
+					class="w-full bg-retro-red text-white py-3 rounded-lg font-bold text-lg retro-button hover:bg-red-600 transition-colors">
+					<span id="loginBtnText">Masuk Sekarang</span>
+					<div id="loginBtnSpinner" class="login-spinner mx-auto hidden"></div>
+				</button>
+
+			</form>
+		</div>
+	</div>
+
+	<!-- jquery cdn -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+	<!-- Sweet Alert -->
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.3/dist/sweetalert2.all.min.js"></script>
+
+	{% with messages = get_flashed_messages(with_categories=true) %} {% if
+	messages %} {% for category, message in messages %}
+	<script>
+		Swal.fire({
+			title: "{{ category.title() }}!",
+			text: "{{ message }}",
+			icon: "{{ category }}" === "danger" ? "error" : "{{ category }}",
+		});
+	</script>
+	{% endfor %} {% endif %} {% endwith %}
+
+	<script>
+		function toggleModal() {
+			const modal = document.getElementById("loginModal");
+			modal.classList.toggle("hidden");
+			if (!modal.classList.contains("hidden")) {
+				modal.classList.add("fade-in");
+				document.body.style.overflow = 'hidden';
+			} else {
+				document.body.style.overflow = 'auto';
+			}
+		}
+
+		// Enhanced Login Form with Loading States
+		$("#login-form").submit(function (event) {
+			event.preventDefault();
+
+			const username = $("#inputUsername").val().trim();
+			const password = $("#inputPassword").val().trim();
+			const submitBtn = $("#loginSubmitBtn");
+			const btnText = $("#loginBtnText");
+			const btnSpinner = $("#loginBtnSpinner");
+			const loadingOverlay = $("#loginLoadingOverlay");
+			const loadingText = $("#loginLoadingText");
+			const usernameInput = $("#inputUsername");
+			const passwordInput = $("#inputPassword");
+
+			// Validate inputs
+			if (username === "" || password === "") {
+				// Highlight empty fields
+				if (username === "") {
+					usernameInput.addClass("border-red-500 pulse-border");
+					setTimeout(() => usernameInput.removeClass("border-red-500 pulse-border"), 3000);
+				}
+				if (password === "") {
+					passwordInput.addClass("border-red-500 pulse-border");
+					setTimeout(() => passwordInput.removeClass("border-red-500 pulse-border"), 3000);
+				}
+
+				Swal.fire({
+					title: "Peringatan!",
+					text: "Username dan kata sandi harus diisi!",
+					icon: "warning",
+					customClass: {
+						popup: 'retro-card'
+					}
+				});
+				return;
+			}
+
+			// Start loading state
+			startLoginLoading();
+
+			// Simulate loading steps
+			const loadingSteps = [
+				"Memverifikasi akun...",
+				"Memeriksa kredensial...",
+				"Mengautentikasi pengguna...",
+				"Memuat dashboard..."
+			];
+
+			let currentStep = 0;
+			const loadingInterval = setInterval(() => {
+				if (currentStep < loadingSteps.length) {
+					loadingText.text(loadingSteps[currentStep]);
+					currentStep++;
+				}
+			}, 800);
+
+			// AJAX request
+			$.ajax({
+				url: "{{ url_for('logins') }}", // Endpoint untuk login
+				type: "POST",
+				data: { inputUsername: username, inputPassword: password },
+				success: function (response) {
+					clearInterval(loadingInterval);
+					console.log(response);
+
+					if (response.success) {
+						loadingText.text("Login berhasil! Mengarahkan...");
+
+						setTimeout(() => {
+							stopLoginLoading();
+							$("#dashboard-button").removeClass("hidden");
+							toggleModal();
+
+							Swal.fire({
+								title: "Selamat datang!",
+								text: response.message,
+								icon: "success",
+								customClass: {
+									popup: 'retro-card'
+								},
+								timer: 2000,
+								timerProgressBar: true
+							}).then(function () {
+								window.location.href = "{{ url_for('dashboards') }}";
+							});
+						}, 1000);
+					} else {
+						stopLoginLoading();
+						Swal.fire({
+							title: "Login Gagal!",
+							text: response.message,
+							icon: "error",
+							customClass: {
+								popup: 'retro-card'
+							}
+						});
+					}
+				},
+				error: function (xhr) {
+					clearInterval(loadingInterval);
+					stopLoginLoading();
+					console.log(xhr.responseText);
+
+					Swal.fire({
+						title: "Kesalahan Server!",
+						text: "Terjadi kesalahan saat menghubungi server. Silakan coba lagi.",
+						icon: "error",
+						customClass: {
+							popup: 'retro-card'
+						}
+					});
+				},
+			});
+		});
+
+		// Loading state functions
+		function startLoginLoading() {
+			const submitBtn = $("#loginSubmitBtn");
+			const btnText = $("#loginBtnText");
+			const btnSpinner = $("#loginBtnSpinner");
+			const loadingOverlay = $("#loginLoadingOverlay");
+			const usernameInput = $("#inputUsername");
+			const passwordInput = $("#inputPassword");
+
+			// Show loading overlay
+			loadingOverlay.removeClass("hidden");
+
+			// Disable and style button
+			submitBtn.addClass("loading");
+			submitBtn.prop("disabled", true);
+			btnText.addClass("hidden");
+			btnSpinner.removeClass("hidden");
+
+			// Disable inputs
+			usernameInput.addClass("input-loading").prop("disabled", true);
+			passwordInput.addClass("input-loading").prop("disabled", true);
+		}
+
+		function stopLoginLoading() {
+			const submitBtn = $("#loginSubmitBtn");
+			const btnText = $("#loginBtnText");
+			const btnSpinner = $("#loginBtnSpinner");
+			const loadingOverlay = $("#loginLoadingOverlay");
+			const usernameInput = $("#inputUsername");
+			const passwordInput = $("#inputPassword");
+
+			// Hide loading overlay
+			loadingOverlay.addClass("hidden");
+
+			// Reset button
+			submitBtn.removeClass("loading");
+			submitBtn.prop("disabled", false);
+			btnText.removeClass("hidden");
+			btnSpinner.addClass("hidden");
+
+			// Enable inputs
+			usernameInput.removeClass("input-loading").prop("disabled", false);
+			passwordInput.removeClass("input-loading").prop("disabled", false);
+		}
+
+		// Classification Form Handler
+		const uploadArea = document.getElementById('uploadArea');
+		const uploadBtn = document.getElementById('uploadBtn');
+		const imageInput = document.getElementById('imageInput');
+		const previewSection = document.getElementById('previewSection');
+		const originalPreview = document.getElementById('originalPreview');
+		const classificationForm = document.getElementById('classificationForm');
+		const loadingSpinner = document.getElementById('loadingSpinner');
+		const loadingText = document.getElementById('loadingText');
+		const resultContent = document.getElementById('resultContent');
+		const qualityBadge = document.getElementById('qualityBadge');
+		// const accuracy = document.getElementById('accuracy');
+		const distance = document.getElementById('distance');
+		const hsvAvg = document.getElementById('hsvAvg');
+		const glcmAvg = document.getElementById('glcmAvg');
+		const classificationDescription = document.getElementById('classificationDescription');
+
+		// Upload button click
+		uploadBtn.addEventListener('click', () => {
+			imageInput.click();
+		});
+
+		// Upload area click
+		uploadArea.addEventListener('click', () => {
+			imageInput.click();
+		});
+
+		// Drag and drop functionality
+		uploadArea.addEventListener('dragover', (e) => {
+			e.preventDefault();
+			uploadArea.classList.add('drag-over');
+		});
+
+		uploadArea.addEventListener('dragleave', () => {
+			uploadArea.classList.remove('drag-over');
+		});
+
+		uploadArea.addEventListener('drop', (e) => {
+			e.preventDefault();
+			uploadArea.classList.remove('drag-over');
+			const files = e.dataTransfer.files;
+			if (files.length > 0) {
+				handleFile(files[0]);
+			}
+		});
+
+		// File input change
+		imageInput.addEventListener('change', (e) => {
+			if (e.target.files.length > 0) {
+				handleFile(e.target.files[0]);
+			}
+		});
+
+		function handleFile(file) {
+			if (!file.type.startsWith('image/')) {
+				Swal.fire({
+					title: "Format Tidak Valid!",
+					text: "Mohon pilih file gambar yang valid (JPG, PNG, JPEG)!",
+					icon: "warning",
+					customClass: {
+						popup: 'retro-card'
+					}
+				});
+				return;
+			}
+
+			if (file.size > 5 * 1024 * 1024) {
+				Swal.fire({
+					title: "File Terlalu Besar!",
+					text: "Ukuran file maksimal 5MB. Silakan kompres gambar terlebih dahulu.",
+					icon: "warning",
+					customClass: {
+						popup: 'retro-card'
+					}
+				});
+				return;
+			}
+
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				originalPreview.src = e.target.result;
+				previewSection.classList.remove('hidden');
+				resultContent.classList.add('hidden');
+
+				// Scroll to preview with smooth animation
+				setTimeout(() => {
+					previewSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+				}, 300);
+
+				// Show success notification
+				showNotification('✅ Gambar berhasil diupload! Klik tombol analisis untuk memulai klasifikasi.', 'success');
+			};
+			reader.readAsDataURL(file);
+		}
+
+		// Classification Form Submit
+		classificationForm.addEventListener('submit', function (e) {
+			e.preventDefault();
+
+			if (!imageInput.files[0]) {
+				Swal.fire({
+					title: "Tidak Ada Gambar!",
+					text: "Silakan upload gambar terlebih dahulu.",
+					icon: "warning",
+					customClass: {
+						popup: 'retro-card'
+					}
+				});
+				return;
+			}
+
+			// Show loading state
+			loadingSpinner.classList.remove('hidden');
+			resultContent.classList.add('hidden');
+
+			// Enhanced analysis simulation
+			const analysisSteps = [
+				'🔄 Memproses gambar garam...',
+				'🎨 Mengekstrak fitur HSV...',
+				'🔬 Menganalisis tekstur GLCM...',
+				'🧠 Menjalankan algoritma KNN...',
+				'📊 Menghitung skor kualitas...',
+				'✨ Finalisasi hasil...'
+			];
+
+			let currentStep = 0;
+			const stepInterval = setInterval(() => {
+				if (currentStep < analysisSteps.length) {
+					loadingText.textContent = analysisSteps[currentStep];
+					currentStep++;
+				} else {
+					clearInterval(stepInterval);
+				}
+			}, 500);
+
+			// Create FormData
+			const formData = new FormData();
+			formData.append('image', imageInput.files[0]);
+
+			// AJAX request for classification
+			$.ajax({
+				url: "{{ url_for('homeKlasifikasis') }}", // Home route for classification
+				type: "POST",
+				data: formData,
+				processData: false,
+				contentType: false,
+				success: function (response) {
+					clearInterval(stepInterval);
+
+					if (response.success) {
+						displayClassificationResult(response.data);
+						showNotification(`🎉 Klasifikasi berhasil! Kualitas garam: ${response.data.kelas}`, 'success');
+					} else {
+						loadingSpinner.classList.add('hidden');
+						Swal.fire({
+							title: "Klasifikasi Gagal!",
+							text: response.message || "Terjadi kesalahan dalam proses klasifikasi.",
+							icon: "error",
+							customClass: {
+								popup: 'retro-card'
+							}
+						});
+					}
+				},
+				error: function (xhr) {
+					console.log(xhr.responseText)
+					clearInterval(stepInterval);
+					loadingSpinner.classList.add('hidden');
+
+					let errorMessage = "Terjadi kesalahan saat menghubungi server.";
+					if (xhr.responseJSON && xhr.responseJSON.message) {
+						errorMessage = xhr.responseJSON.message;
+					}
+
+					Swal.fire({
+						title: "Kesalahan Server!",
+						text: errorMessage,
+						icon: "error",
+						customClass: {
+							popup: 'retro-card'
+						}
+					});
+				}
+			});
+		});
+
+		function displayClassificationResult(data) {
+			// Hide loading and show results
+			loadingSpinner.classList.add('hidden');
+			resultContent.classList.remove('hidden');
+
+			// Set quality badge
+			const qualityConfig = {
+				'Layak': {
+					color: 'bg-gradient-to-r from-green-500 to-green-600',
+					emoji: '🥇',
+					description: 'Garam dengan kualitas premium. Kristal sempurna, warna optimal, dan tekstur halus yang memenuhi standar kualitas tinggi.'
+				},
+				'Sedang': {
+					color: 'bg-gradient-to-r from-yellow-500 to-orange-500',
+					emoji: '🥈',
+					description: 'Garam dengan kualitas standar. Kristal baik, warna normal, dan tekstur sedang yang masih dapat diterima untuk konsumsi.'
+				},
+				'Tidak Layak': {
+					color: 'bg-gradient-to-r from-red-500 to-red-600',
+					emoji: '⚠️',
+					description: 'Garam dengan kualitas rendah. Perlu dilakukan perbaikan dan analisis lebih lanjut sebelum dapat dikonsumsi.'
+				}
+			};
+
+			const config = qualityConfig[data.kelas] || qualityConfig['Tidak Layak'];
+
+			qualityBadge.innerHTML = `${config.emoji} ${data.kelas}`;
+			qualityBadge.className = `inline-block px-6 py-3 rounded-full text-white font-bold text-xl ${config.color}`;
+
+			// Set metrics
+			// accuracy.textContent = `${data.akurasi}%`;
+			distance.textContent = data.jarak.toFixed(4);
+
+			// Calculate HSV average
+			const hsvValues = [data.hasil_klasifikasi.hue_mean, data.hasil_klasifikasi.sat_mean, data.hasil_klasifikasi.val_mean];
+			const hsvAverage = (hsvValues.reduce((a, b) => a + b, 0) / hsvValues.length).toFixed(2);
+			hsvAvg.textContent = hsvAverage;
+
+			// Calculate GLCM average
+			const glcmValues = [
+				data.hasil_klasifikasi.energi,
+				data.hasil_klasifikasi.homogenitas,
+				data.hasil_klasifikasi.kontras,
+				data.hasil_klasifikasi.korelasi,
+				data.hasil_klasifikasi.dismilaritas
+			];
+			const glcmAverage = (glcmValues.reduce((a, b) => a + b, 0) / glcmValues.length).toFixed(4);
+			glcmAvg.textContent = glcmAverage;
+
+			// Set description
+			classificationDescription.textContent = config.description;
+
+			// Add celebration animation
+			resultContent.style.animation = 'bounce 0.6s ease-out';
+		}
+
+		// Enhanced notification system
+		function showNotification(message, type = 'info') {
+			const notification = document.createElement('div');
+			const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+
+			notification.className = `fixed top-24 right-6 ${bgColor} text-white px-6 py-4 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300`;
+			notification.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <span class="text-lg">${message}</span>
+                    <button onclick="this.parentElemeznt.parentElement.remove()" class="text-white hover:text-gray-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            `;
+
+			document.body.appendChild(notification);
+
+			setTimeout(() => {
+				notification.style.transform = 'translateX(0)';
+			}, 100);
+
+			setTimeout(() => {
+				notification.style.transform = 'translateX(100%)';
+				setTimeout(() => notification.remove(), 300);
+			}, 5000);
+		}
+
+		// Smooth scrolling for navigation links
+		document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+			anchor.addEventListener('click', function (e) {
+				e.preventDefault();
+				const target = document.querySelector(this.getAttribute('href'));
+				if (target) {
+					target.scrollIntoView({
+						behavior: 'smooth',
+						block: 'start'
+					});
+				}
+			});
+		});
+
+		// Parallax effect for floating shapes
+		window.addEventListener('scroll', () => {
+			const scrolled = window.pageYOffset;
+			const shapes = document.querySelectorAll('.floating-shape');
+
+			shapes.forEach((shape, index) => {
+				const speed = 0.5 + (index * 0.1);
+				shape.style.transform = `translateY(${scrolled * speed}px)`;
+			});
+		});
+
+		// Add loading state to buttons
+		document.querySelectorAll('.retro-button').forEach(button => {
+			button.addEventListener('click', function () {
+				if (!this.classList.contains('loading')) {
+					this.style.transform = 'scale(0.98)';
+					setTimeout(() => {
+						this.style.transform = '';
+					}, 150);
+				}
+			});
+		});
+
+		// Enhanced drag and drop visual feedback
+		let dragCounter = 0;
+
+		document.addEventListener('dragenter', (e) => {
+			e.preventDefault();
+			dragCounter++;
+			if (e.target === uploadArea || uploadArea.contains(e.target)) {
+				uploadArea.classList.add('drag-over');
+			}
+		});
+
+		document.addEventListener('dragleave', (e) => {
+			dragCounter--;
+			if (dragCounter === 0) {
+				uploadArea.classList.remove('drag-over');
+			}
+		});
+
+		// Close modal when clicking outside
+		document.getElementById('loginModal').addEventListener('click', function (e) {
+			if (e.target === this) {
+				toggleModal();
+			}
+		});
+
+		// Prevent modal close during loading
+		document.getElementById('closeModal').addEventListener('click', function (e) {
+			const loadingOverlay = document.getElementById('loginLoadingOverlay');
+			if (!loadingOverlay.classList.contains('hidden')) {
+				e.preventDefault();
+				showNotification('⏳ Mohon tunggu hingga proses login selesai', 'info');
+			}
+		});
+	</script>
+
+</body>
+
+</html>

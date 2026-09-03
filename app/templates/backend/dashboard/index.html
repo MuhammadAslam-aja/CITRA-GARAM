@@ -1,0 +1,133 @@
+{% extends "layouts/main.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<!-- Dashboard Section -->
+<div id="dashboard-content" class="animate-fade-in">
+    <!-- Welcome Header -->
+    <div class="gradient-bg text-white p-6 sm:p-8 rounded-2xl retro-shadow-lg mb-6 sm:mb-8 relative overflow-hidden">
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="absolute inset-0 tech-pattern opacity-30"></div>
+        <div class="relative z-10">
+            <h1 class="text-2xl sm:text-4xl font-bold mb-4">Selamat Datang {{ current_user.nama|capitalize }} di
+                Dashboard GaramCitra!</h1>
+            <p class="text-lg sm:text-xl opacity-90">Panel kontrol untuk mengelola sistem klasifikasi
+                kualitas garam</p>
+            <div class="mt-6 flex flex-wrap gap-4">
+                <div class="glass-effect px-4 py-2 rounded-full">
+                    <span class="font-semibold text-sm sm:text-base">Total Pengguna: <span
+                            id="totalPengguna">0</span></span>
+                </div>
+                <div class="glass-effect px-4 py-2 rounded-full">
+                    <span class="font-semibold text-sm sm:text-base">Dataset: <span id="totalDataset">0</span>
+                        gambar</span>
+                </div>
+                <div class="glass-effect px-4 py-2 rounded-full">
+                    <span class="font-semibold text-sm sm:text-base">Total Klasifikasi: <span
+                            id="totalKlasifikasi">0</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
+        <div class="stat-card p-4 sm:p-6 rounded-2xl retro-card bg-white">
+            <div class="flex items-center justify-between mb-4">
+                <div class="text-3xl sm:text-4xl">👥</div>
+                <div id="cardPengguna" class="text-xl sm:text-2xl font-bold text-blue-600">0</div>
+            </div>
+            <h3 class="font-bold text-gray-700 mb-1 text-sm sm:text-base">Total Pengguna</h3>
+            <p class="text-xs sm:text-sm text-gray-500">Pengguna terdaftar</p>
+        </div>
+
+        <div class="stat-card p-4 sm:p-6 rounded-2xl retro-card bg-white">
+            <div class="flex items-center justify-between mb-4">
+                <div class="text-3xl sm:text-4xl">🗄️</div>
+                <div id="cardDataset" class="text-xl sm:text-2xl font-bold text-green-600">0</div>
+            </div>
+            <h3 class="font-bold text-gray-700 mb-1 text-sm sm:text-base">Dataset Gambar</h3>
+            <p class="text-xs sm:text-sm text-gray-500">Gambar tersimpan</p>
+        </div>
+
+        <div class="stat-card p-4 sm:p-6 rounded-2xl retro-card bg-white">
+            <div class="flex items-center justify-between mb-4">
+                <div class="text-3xl sm:text-4xl">📊</div>
+                <div id="cardKlasifikasi" class="text-xl sm:text-2xl font-bold text-purple-600">0</div>
+            </div>
+            <h3 class="font-bold text-gray-700 mb-1 text-sm sm:text-base">Total Klasifikasi</h3>
+            <p class="text-xs sm:text-sm text-gray-500">Analisis selesai</p>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 gap-6 sm:gap-8">
+        <div class="chart-container p-4 sm:p-6 rounded-2xl retro-card bg-white">
+            <h3 class="text-xl sm:text-2xl font-bold text-retro-dark mb-4 sm:mb-6">Distribusi Kualitas Dataset</h3>
+            <div class="relative h-64 sm:h-80">
+                <canvas id="qualityChart" class="w-full h-full"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js_custom %}
+<script>
+    $(document).ready(function () {
+        // Ambil data statistik dari backend
+        $.ajax({
+            url: "{{ url_for('getStats') }}",
+            type: "GET",
+            dataType: "json",
+            success: function (res) {
+                if (res.success) {
+                    // Update angka
+                    $("#totalPengguna, #cardPengguna").text(res.totals.pengguna);
+                    $("#totalDataset, #cardDataset").text(res.totals.dataset);
+                    $("#totalKlasifikasi, #cardKlasifikasi").text(res.totals.klasifikasi);
+
+                    // Render chart
+                    initializeCharts(res.distribusi);
+                }
+            },
+            error: function () {
+                console.error("Gagal memuat data dashboard");
+            }
+        });
+    });
+
+    function initializeCharts(distribusi) {
+        const qualityCtx = document.getElementById('qualityChart').getContext('2d');
+        new Chart(qualityCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(distribusi),
+                datasets: [{
+                    data: Object.values(distribusi),
+                    backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
+                    borderWidth: 3,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            font: {
+                                size: window.innerWidth < 640 ? 12 : 14,
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

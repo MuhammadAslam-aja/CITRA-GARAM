@@ -1,0 +1,32 @@
+<div class="px-4 sm:px-6 py-4">
+    <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <button id="sidebarToggle" class="md:hidden text-retro-dark p-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-retro-red rounded-full flex items-center justify-center">
+                <span class="text-white font-bold text-sm sm:text-lg">GC</span>
+            </div>
+            <h1 class="text-lg sm:text-2xl font-bold text-retro-dark">GaramCitra</h1>
+        </div>
+
+        <div class="flex items-center space-x-2 sm:space-x-4">
+            <div class="hidden sm:flex items-center space-x-3 bg-white bg-opacity-20 rounded-full px-4 py-2">
+                <div class="w-8 h-8 bg-retro-red rounded-full flex items-center justify-center">
+                    <span class="text-white font-semibold text-sm">
+                        {{ current_user.nama[0]|upper }}
+                    </span>
+                </div>
+                <span class="text-retro-dark font-semibold">
+                    {{ current_user.nama|capitalize }}
+                </span>
+            </div>
+            <button id="logoutBtn"
+                class="bg-retro-red text-white px-3 py-2 sm:px-4 rounded-full font-semibold retro-button hover:bg-red-600 transition-colors text-sm sm:text-base">
+                Logout
+            </button>
+        </div>
+    </div>
+</div>
