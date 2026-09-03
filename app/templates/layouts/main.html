@@ -617,7 +617,6 @@
 
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 
     {% with messages = get_flashed_messages(with_categories=true) %} {% if
     messages %} {% for category, message in messages %}
@@ -631,6 +630,11 @@
     {% endfor %} {% endif %} {% endwith %}
 
     <script>
+        // Set DataTables error mode to 'none' to suppress browser alert popups
+        if (typeof $.fn.dataTable !== 'undefined') {
+            $.fn.dataTable.ext.errMode = 'none';
+        }
+
         // DOM Ready
         document.addEventListener('DOMContentLoaded', function () {
             initializeMobileNav();
