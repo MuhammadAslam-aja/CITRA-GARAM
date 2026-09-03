@@ -90,9 +90,9 @@ def getDataset():
         for index, ds in enumerate(datasets, start=start + 1):
             # ambil gambar
             gambar = Gambar.query.get(ds.gambar)
-            image_url = os.path.join(app.config["UPLOAD_FOLDER"], "dataset", gambar.gambar) if gambar else None
+            image_url = f"/upload/dataset/{gambar.gambar}" if (gambar and gambar.gambar) else None
 
-            image_html = f'<img src="{image_url}" class="w-20 h-20 object-cover rounded-lg border" alt="preview">' if gambar else "-"
+            image_html = f'<img src="{image_url}" class="w-20 h-20 object-cover rounded-lg border" alt="preview">' if image_url else "-"
 
             # mapping label → kasih badge warna
             label_map = {
@@ -108,9 +108,12 @@ def getDataset():
             """
 
             # mapping tanggal upload
-            tanggal_upload = ds.created_at.strftime("%d %m %Y")
-            bulan = bulan_map.get(ds.created_at.strftime("%m"), ds.created_at.strftime("%m"))
-            tanggal_upload = tanggal_upload.replace(ds.created_at.strftime("%m"), bulan)
+            if ds.created_at:
+                tanggal_upload = ds.created_at.strftime("%d %m %Y")
+                bulan = bulan_map.get(ds.created_at.strftime("%m"), ds.created_at.strftime("%m"))
+                tanggal_upload = tanggal_upload.replace(ds.created_at.strftime("%m"), bulan)
+            else:
+                tanggal_upload = "-"
 
             # tombol aksi
             action_html = f"""
@@ -140,6 +143,8 @@ def getDataset():
         })
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
     
 
@@ -153,11 +158,11 @@ def viewDataset(id):
         image_url = None
         file_size_kb = None
 
-        if gambar:
+        if gambar and gambar.gambar:
+            image_url = f"/upload/dataset/{gambar.gambar}"
             file_path = os.path.join(app.config["UPLOAD_FOLDER"], "dataset", gambar.gambar)
-            image_url = file_path.replace("\\", "/")  # biar URL konsisten
             if os.path.exists(file_path):
-                file_size_kb = round(os.path.getsize(file_path) / 1024, 2)  # KB dengan 2 decimal
+                file_size_kb = round(os.path.getsize(file_path) / 1024, 2)
 
         label_map = {
             "layak": "Layak",
@@ -169,12 +174,14 @@ def viewDataset(id):
         return jsonify(success=True, data={
             "id": dataset.id,
             "label": label_text,
-            "upload": dataset.created_at.strftime("%d %B %Y"),
+            "upload": dataset.created_at.strftime("%d %B %Y") if dataset.created_at else "-",
             "image_url": image_url,
             "size": f"{file_size_kb}" if file_size_kb else None,
             "filename": gambar.gambar if gambar else None
         })
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify(success=False, message=str(e)), 500
 
     
