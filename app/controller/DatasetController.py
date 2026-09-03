@@ -223,6 +223,7 @@ def upload():
                     filename = secure_filename(file.filename)
                     filename = f"{uuid.uuid4().hex}_{filename}"
                     save_path = os.path.join(app.config['UPLOAD_FOLDER'], 'dataset', filename)
+                    os.makedirs(os.path.dirname(save_path), exist_ok=True)
                     file.save(save_path)
 
                     # Jalankan preprocessing
@@ -277,6 +278,8 @@ def upload():
             return jsonify(success=True, message=f"{uploaded_count} file dataset berhasil diupload")
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             db.session.rollback()
             return jsonify(success=False, message=str(e)), 500
 
