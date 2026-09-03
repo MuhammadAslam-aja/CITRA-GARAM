@@ -1,4 +1,5 @@
 import os
+import threading
 from flask import Flask
 from config import Config
 from flask_sqlalchemy import SQLAlchemy
@@ -23,7 +24,7 @@ from app import routes
 def auto_init_database():
     try:
         with app.app_context():
-            # 1. Ensure tables exist
+            # 1. Ensure all tables exist
             db.create_all()
 
             # 2. Ensure admin user exists
@@ -48,18 +49,27 @@ def auto_init_database():
                         cursor = raw_conn.cursor()
                         cursor.execute("SET FOREIGN_KEY_CHECKS = 0;")
                         with open(sql_file, 'r', encoding='utf-8') as f:
-                            statement = ""
-                            for line in f:
-                                line_str = line.strip()
-                                if line_str.startswith('--') or line_str.startswith('/*') or not line_str or line_str.startswith('LOCK') or line_str.startswith('UNLOCK'):
-                                    continue
-                                statement += "\n" + line
-                                if line_str.endswith(';'):
-                                    try:
-                                        cursor.execute(statement)
-                                    except Exception as stmt_e:
-                                        print(f"Stmt notice: {stmt_e}")
-                                    statement = ""
+                            full_sql = f.read()
+
+                        # Collect clean SQL statements
+                        statements = []
+                        current_stmt = ""
+                        for line in full_sql.splitlines():
+                            line_str = line.strip()
+                            if line_str.startswith('--') or line_str.startswith('/*') or not line_str or line_str.startswith('LOCK') or line_str.startswith('UNLOCK'):
+                                continue
+                            current_stmt += "\n" + line
+                            if line_str.endswith(';'):
+                                statements.append(current_stmt)
+                                current_stmt = ""
+
+                        # Execute statements
+                        for stmt in statements:
+                            try:
+                                cursor.execute(stmt)
+                            except Exception as stmt_e:
+                                print(f"Stmt notice: {stmt_e}")
+
                         cursor.execute("SET FOREIGN_KEY_CHECKS = 1;")
                         raw_conn.commit()
                         print("Dataset dump import completed via raw DBAPI!")
@@ -74,4 +84,5 @@ def auto_init_database():
         print(f"Auto-init exception: {ex}")
         traceback.print_exc()
 
-auto_init_database()
+# Run database auto-init in a background daemon thread to prevent Gunicorn worker startup timeout
+threading.Thread(target=auto_init_database, daemon=True).start()
