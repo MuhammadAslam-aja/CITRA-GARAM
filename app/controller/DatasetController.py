@@ -44,42 +44,32 @@ def index():
 
 def getDataset():
     try:
-        # Pagination
-        start = request.args.get("start", default=0, type=int)
-        length = request.args.get("length", default=10, type=int)
+        draw = request.args.get("draw", default=1, type=int) or 1
+        start = request.args.get("start", default=0, type=int) or 0
+        length = request.args.get("length", default=10, type=int) or 10
 
-        # Search
         search_value = request.args.get("search[value]", "", type=str)
-
-        # Order
-        order_column_index = request.args.get("order[0][column]", default=0, type=int)
+        order_column_index = request.args.get("order[0][column]", default=0, type=int) or 0
         order_direction = request.args.get("order[0][dir]", default="asc", type=str)
 
-        # Kolom tabel
         columns = ["id", "gambar", "kelas", "created_at"]
         order_column = columns[order_column_index] if order_column_index < len(columns) else "id"
 
-        # Base query
         query = Dataset.query
 
-        # Filter pencarian (by label)
         if search_value:
             query = query.filter(Dataset.kelas.ilike(f"%{search_value}%"))
 
-        # Sorting
         if order_direction == "desc":
             query = query.order_by(desc(getattr(Dataset, order_column, Dataset.id)))
         else:
             query = query.order_by(getattr(Dataset, order_column, Dataset.id))
 
-        # Total records
         total_records = Dataset.query.count()
         filtered_records = query.count()
 
-        # Pagination
         datasets = query.offset(start).limit(length).all()
 
-        # Data response
         data = []
         bulan_map = {
             "01": "Januari", "02": "Februari", "03": "Maret", "04": "April",
@@ -88,34 +78,33 @@ def getDataset():
         }
 
         for index, ds in enumerate(datasets, start=start + 1):
-            # ambil gambar
-            gambar = Gambar.query.get(ds.gambar)
+            gambar = Gambar.query.get(ds.gambar) if ds.gambar else None
             image_url = f"/upload/dataset/{gambar.gambar}" if (gambar and gambar.gambar) else None
 
             image_html = f'<img src="{image_url}" class="w-20 h-20 object-cover rounded-lg border" alt="preview">' if image_url else "-"
 
-            # mapping label → kasih badge warna
             label_map = {
                 "layak": ("Layak", "bg-green-500"),
                 "sedang": ("Sedang", "bg-yellow-500"),
                 "tidak_layak": ("Tidak Layak", "bg-red-500"),
             }
-            label_text, label_color = label_map.get(ds.kelas, (ds.kelas, "bg-gray-500"))
+            label_text, label_color = label_map.get(ds.kelas, (ds.kelas or "-", "bg-gray-500"))
             label_html = f"""
                 <span class="px-2 sm:px-3 py-1 rounded-full text-white text-xs sm:text-sm font-semibold {label_color}">
                     {label_text}
                 </span>
             """
 
-            # mapping tanggal upload
             if ds.created_at:
-                tanggal_upload = ds.created_at.strftime("%d %m %Y")
-                bulan = bulan_map.get(ds.created_at.strftime("%m"), ds.created_at.strftime("%m"))
-                tanggal_upload = tanggal_upload.replace(ds.created_at.strftime("%m"), bulan)
+                try:
+                    tanggal_upload = ds.created_at.strftime("%d %m %Y")
+                    bulan = bulan_map.get(ds.created_at.strftime("%m"), ds.created_at.strftime("%m"))
+                    tanggal_upload = tanggal_upload.replace(ds.created_at.strftime("%m"), bulan)
+                except Exception:
+                    tanggal_upload = "-"
             else:
                 tanggal_upload = "-"
 
-            # tombol aksi
             action_html = f"""
               <div class="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-2">
                 <button class="viewBtn text-blue-600 hover:text-blue-800 text-sm font-medium viewBtn" data-id="{ds.id}">
@@ -136,7 +125,7 @@ def getDataset():
             })
 
         return jsonify({
-            "draw": request.args.get("draw", type=int),
+            "draw": draw,
             "recordsTotal": total_records,
             "recordsFiltered": filtered_records,
             "data": data
@@ -145,7 +134,14 @@ def getDataset():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        draw = request.args.get("draw", default=1, type=int) or 1
+        return jsonify({
+            "draw": draw,
+            "recordsTotal": 0,
+            "recordsFiltered": 0,
+            "data": [],
+            "error": str(e)
+        }), 200
     
 
 def viewDataset(id):

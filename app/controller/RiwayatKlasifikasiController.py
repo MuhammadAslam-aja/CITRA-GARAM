@@ -22,20 +22,14 @@ def index():
 
 def getKlasifikasiHistory():
     try:
-        # Pagination
-        start = request.args.get("start", 0, type=int)
-        length = request.args.get("length", 10, type=int)
-
-        # Search global
+        draw = request.args.get("draw", default=1, type=int) or 1
+        start = request.args.get("start", default=0, type=int) or 0
+        length = request.args.get("length", default=10, type=int) or 10
         search_value = request.args.get("search[value]", "", type=str)
-
-        # Filter status dari select
         status_filter = request.args.get("status", "", type=str)
 
-        # Base query
         query = Klasifikasi.query
 
-        # Filter by status (mapping ke lowercase dataset)
         if status_filter:
             status_map = {
                 "Layak": "layak",
@@ -45,15 +39,12 @@ def getKlasifikasiHistory():
             if status_filter in status_map:
                 query = query.filter(Klasifikasi.kelas == status_map[status_filter])
 
-        # Search global (opsional)
         if search_value:
             query = query.filter(Klasifikasi.kelas.ilike(f"%{search_value}%"))
 
-        # Total & filtered
         total_records = Klasifikasi.query.count()
         filtered_records = query.count()
 
-        # Ambil data
         histories = query.offset(start).limit(length).all()
 
         data = []
@@ -64,30 +55,32 @@ def getKlasifikasiHistory():
         }
 
         for i, h in enumerate(histories, start=start + 1):
-            # ambil gambar
-            gambar = Gambar.query.get(h.gambar)
-            img_url = os.path.join(app.config["UPLOAD_FOLDER"], "klasifikasi", gambar.gambar) if gambar else None
+            gambar = Gambar.query.get(h.gambar) if h.gambar else None
+            img_url = f"/upload/klasifikasi/{gambar.gambar}" if (gambar and gambar.gambar) else None
             img_html = f'<img src="{img_url}" class="w-20 h-20 object-cover rounded-lg border">' if img_url else "-"
 
-            # mapping label → kasih badge warna
             label_map = {
                 "layak": ("Layak", "bg-green-500"),
                 "sedang": ("Sedang", "bg-yellow-500"),
                 "tidak_layak": ("Tidak Layak", "bg-red-500"),
             }
-            label_text, label_color = label_map.get(h.kelas, (h.kelas, "bg-gray-500"))
+            label_text, label_color = label_map.get(h.kelas, (h.kelas or "-", "bg-gray-500"))
             hasil_html = f"""
               <span class="px-3 py-1 rounded-full text-white text-xs sm:text-sm font-semibold {label_color}">
                 {label_text}
               </span>
             """
 
-            # format tanggal
-            tanggal = h.tanggal_klasifikasi.strftime("%d %m %Y")
-            bulan = bulan_map.get(h.tanggal_klasifikasi.strftime("%m"), h.tanggal_klasifikasi.strftime("%m"))
-            tanggal = tanggal.replace(h.tanggal_klasifikasi.strftime("%m"), bulan)
+            if h.tanggal_klasifikasi:
+                try:
+                    tanggal = h.tanggal_klasifikasi.strftime("%d %m %Y")
+                    bulan = bulan_map.get(h.tanggal_klasifikasi.strftime("%m"), h.tanggal_klasifikasi.strftime("%m"))
+                    tanggal = tanggal.replace(h.tanggal_klasifikasi.strftime("%m"), bulan)
+                except Exception:
+                    tanggal = "-"
+            else:
+                tanggal = "-"
 
-            # tombol aksi
             aksi_html = f"""
               <div class="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-2">
                 <button class="viewBtn text-blue-600 hover:text-blue-800 text-sm font-medium" data-id="{h.id}">
@@ -105,14 +98,23 @@ def getKlasifikasiHistory():
             })
 
         return jsonify({
-            "draw": request.args.get("draw", type=int),
+            "draw": draw,
             "recordsTotal": total_records,
             "recordsFiltered": filtered_records,
             "data": data
         })
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        import traceback
+        traceback.print_exc()
+        draw = request.args.get("draw", default=1, type=int) or 1
+        return jsonify({
+            "draw": draw,
+            "recordsTotal": 0,
+            "recordsFiltered": 0,
+            "data": [],
+            "error": str(e)
+        }), 200
     
 def view(id):
     try:
