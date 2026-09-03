@@ -40,35 +40,34 @@ def auto_init_database():
             # 3. Import dataset if dataset table is empty
             from app.model.dataset import Dataset
             if Dataset.query.count() == 0:
-                print("Dataset empty! Importing db_citra_garam.sql dump...")
+                print("Dataset empty! Auto-importing db_citra_garam.sql dump via raw DBAPI connection...")
                 sql_file = os.path.join(app.root_path, '..', 'db_citra_garam.sql')
                 if os.path.exists(sql_file):
-                    from sqlalchemy import text
-                    with open(sql_file, 'r', encoding='utf-8') as f:
-                        sql_text = f.read()
-
-                    with db.engine.connect() as conn:
-                        trans = conn.begin()
-                        try:
-                            conn.execute(text("SET FOREIGN_KEY_CHECKS = 0;"))
+                    raw_conn = db.engine.raw_connection()
+                    try:
+                        cursor = raw_conn.cursor()
+                        cursor.execute("SET FOREIGN_KEY_CHECKS = 0;")
+                        with open(sql_file, 'r', encoding='utf-8') as f:
                             statement = ""
-                            for line in sql_text.splitlines():
+                            for line in f:
                                 line_str = line.strip()
                                 if line_str.startswith('--') or line_str.startswith('/*') or not line_str or line_str.startswith('LOCK') or line_str.startswith('UNLOCK'):
                                     continue
                                 statement += "\n" + line
                                 if line_str.endswith(';'):
                                     try:
-                                        conn.execute(text(statement))
+                                        cursor.execute(statement)
                                     except Exception as stmt_e:
-                                        pass
+                                        print(f"Stmt notice: {stmt_e}")
                                     statement = ""
-                            conn.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
-                            trans.commit()
-                            print("Dataset dump import completed!")
-                        except Exception as e:
-                            trans.rollback()
-                            print(f"Error during dump import: {e}")
+                        cursor.execute("SET FOREIGN_KEY_CHECKS = 1;")
+                        raw_conn.commit()
+                        print("Dataset dump import completed via raw DBAPI!")
+                    except Exception as e:
+                        raw_conn.rollback()
+                        print(f"Error during raw dump import: {e}")
+                    finally:
+                        raw_conn.close()
 
     except Exception as ex:
         import traceback

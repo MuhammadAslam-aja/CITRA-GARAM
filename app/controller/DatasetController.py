@@ -14,19 +14,33 @@ import app.controller.ProcessingController as pre
 
 
 def index():
-    # Hitung jumlah dataset berdasarkan kelas
-    kualitas_layak = db.session.query(Dataset).filter_by(kelas="layak").count()
-    kualitas_sedang = db.session.query(Dataset).filter_by(kelas="sedang").count()
-    kualitas_rendah = db.session.query(Dataset).filter_by(kelas="tidak_layak").count()
+    try:
+        # Hitung jumlah dataset berdasarkan kelas
+        kualitas_layak = db.session.query(Dataset).filter_by(kelas="layak").count()
+        kualitas_sedang = db.session.query(Dataset).filter_by(kelas="sedang").count()
+        kualitas_rendah = db.session.query(Dataset).filter_by(kelas="tidak_layak").count()
 
-    return render_template(
-        "backend/dataset/index.html",
-        title="Manajemen Dataset",
-        active="dataset",
-        kualitas_layak=kualitas_layak,
-        kualitas_sedang=kualitas_sedang,
-        kualitas_rendah=kualitas_rendah
-    )
+        return render_template(
+            "backend/dataset/index.html",
+            title="Manajemen Dataset",
+            active="dataset",
+            kualitas_layak=kualitas_layak,
+            kualitas_sedang=kualitas_sedang,
+            kualitas_rendah=kualitas_rendah
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"Error in dataset index: {e}")
+        return render_template(
+            "backend/dataset/index.html",
+            title="Manajemen Dataset",
+            active="dataset",
+            kualitas_layak=0,
+            kualitas_sedang=0,
+            kualitas_rendah=0
+        )
+
 
 def getDataset():
     try:
