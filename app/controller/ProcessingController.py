@@ -264,29 +264,19 @@ def knn(data_uji, x, y, k):
 # fungsi perhitungan jarak
 def euclidean_distance(a, b):
     """
-    Updated distance calculation for new feature set
+    Distance calculation matching the 11 core database features
     """
-    # Basic HSV features
     d = ((a['hue_mean'] - b[0])**2 +
          (a['hue_std'] - b[1])**2 +
          (a['sat_mean'] - b[2])**2 +
          (a['sat_std'] - b[3])**2 +
          (a['val_mean'] - b[4])**2 +
          (a['val_std'] - b[5])**2 +
-         # GLCM features
          (a['contrast'] - b[6])**2 +
          (a['dissimilarity'] - b[7])**2 +
          (a['homogeneity'] - b[8])**2 +
          (a['energy'] - b[9])**2 +
          (a['correlation'] - b[10])**2)
-    
-    # Add additional features if available
-    if len(b) > 11:
-        # Additional HSV features
-        d += ((a.get('hue_median', 0) - b[11])**2 +
-              (a.get('sat_median', 0) - b[12])**2 +
-              (a.get('val_median', 0) - b[13])**2 +
-              (a.get('brightness_uniformity', 0) - b[14])**2)
     
     return d**0.5
 
@@ -351,21 +341,12 @@ def runKlasifikasi(img, dataTrain):
         x = []
         y = []
         for i in dataTrain:
-            # Core features (ensure compatibility with existing database)
+            # Core features (matching existing database schema)
             features = [
                 i['hue_mean'], i['hue_std'], i['sat_mean'], i['sat_std'], 
                 i['val_mean'], i['val_std'], i['contrast'], i['dissimilarity'], 
                 i['homogeneity'], i['energy'], i['correlation']
             ]
-            
-            # Add additional features if available
-            features.extend([
-                i.get('hue_median', 0),
-                i.get('sat_median', 0), 
-                i.get('val_median', 0),
-                i.get('brightness_uniformity', 0)
-            ])
-            
             x.append(features)
             y.append(i['kelas'])
 
@@ -389,7 +370,7 @@ def runKlasifikasi(img, dataTrain):
             is_salt = False
             pesan_validasi = "Gambar tidak memiliki tekstur butiran kristal garam."
         # 4. Cek jarak tetangga terdekat (Out-of-Distribution Anomaly Rejection)
-        elif hasil_jarak > 30.0:
+        elif hasil_jarak > 35.0:
             is_salt = False
             pesan_validasi = f"Tekstur dan warna gambar tidak cocok dengan karakteristik kristal garam (jarak outlier: {round(hasil_jarak, 2)})."
 
