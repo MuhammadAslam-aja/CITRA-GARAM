@@ -148,6 +148,10 @@ def HSV(image):
         val_values = val.flatten()
     
     # Calculate comprehensive statistics
+    # high_color_ratio: fraction of pixels with saturation > 60 (highly colored pixels)
+    # Garam: hampir 0% | Pakaian/objek berwarna: >10%
+    high_color_ratio = float(np.sum(sat_values > 60) / len(sat_values)) if len(sat_values) > 0 else 0.0
+
     data_hsv = {
         'hue_mean': float(np.mean(hue_values)),
         'hue_std': float(np.std(hue_values)),
@@ -161,7 +165,9 @@ def HSV(image):
         # Additional color features
         'sat_range': float(np.max(sat_values) - np.min(sat_values)),
         'val_range': float(np.max(val_values) - np.min(val_values)),
-        'brightness_uniformity': float(1.0 / (1.0 + np.std(val_values)))  # Higher for uniform brightness
+        'brightness_uniformity': float(1.0 / (1.0 + np.std(val_values))),  # Higher for uniform brightness
+        # Salt discrimination feature: fraction of highly-colored pixels
+        'high_color_ratio': high_color_ratio
     }
 
     return data_hsv
@@ -357,22 +363,48 @@ def runKlasifikasi(img, dataTrain):
         is_salt = True
         pesan_validasi = ""
 
-        # 1. Cek saturasi warna (garam didominasi warna putih/abu-abu netral)
-        if data_uji['sat_mean'] > 45.0:
+        # Ambil nilai discriminator
+        sat_mean    = data_uji['sat_mean']
+        sat_std     = nilai_hsv.get('sat_std', 0)
+        hue_std     = nilai_hsv.get('hue_std', 0)
+        high_color  = nilai_hsv.get('high_color_ratio', 0)
+        val_mean    = data_uji['val_mean']
+        contrast    = data_uji['contrast']
+
+        # --- Referensi dari data nyata ---
+        # Garam:  sat_mean ~9-16, sat_std ~2-11, hue_std ~16-26, high_color 0-0.5%
+        # Bukan:  sat_mean ~41-49, sat_std ~58-60, hue_std ~56-66, high_color 16-22%
+
+        PESAN_BUKAN_GARAM = "Gambar yang diinput bukan gambar garam, tolong input gambar garam"
+
+        # 1. Hue Std sangat tinggi → warna-warni (bukan garam)
+        if hue_std > 50.0:
             is_salt = False
-            pesan_validasi = "Gambar terdeteksi memiliki saturasi warna terlalu tinggi. Objek garam didominasi warna putih atau netral."
-        # 2. Cek tingkat kecerahan (garam tidak gelap pekat)
-        elif data_uji['val_mean'] < 55.0:
+            pesan_validasi = PESAN_BUKAN_GARAM
+        # 2. Fraksi piksel berwarna tinggi (sat OpenCV > 60) → bukan garam
+        elif high_color > 0.08:
             is_salt = False
-            pesan_validasi = "Gambar terlalu gelap untuk objek garam."
-        # 3. Cek tekstur butiran (garam memiliki butiran kristal)
-        elif data_uji['contrast'] < 0.2:
+            pesan_validasi = PESAN_BUKAN_GARAM
+        # 3. Sat Std tinggi → variasi warna besar (bukan garam)
+        elif sat_std > 40.0:
             is_salt = False
-            pesan_validasi = "Gambar tidak memiliki tekstur butiran kristal garam."
-        # 4. Cek jarak tetangga terdekat (Out-of-Distribution Anomaly Rejection)
+            pesan_validasi = PESAN_BUKAN_GARAM
+        # 4. Sat Mean sangat tinggi → warna jenuh (bukan garam)
+        elif sat_mean > 45.0:
+            is_salt = False
+            pesan_validasi = PESAN_BUKAN_GARAM
+        # 5. Cek tingkat kecerahan (garam tidak gelap pekat)
+        elif val_mean < 55.0:
+            is_salt = False
+            pesan_validasi = PESAN_BUKAN_GARAM
+        # 6. Cek tekstur butiran (garam memiliki butiran kristal)
+        elif contrast < 0.2:
+            is_salt = False
+            pesan_validasi = PESAN_BUKAN_GARAM
+        # 7. Cek jarak KNN (out-of-distribution)
         elif hasil_jarak > 35.0:
             is_salt = False
-            pesan_validasi = f"Tekstur dan warna gambar tidak cocok dengan karakteristik kristal garam (jarak outlier: {round(hasil_jarak, 2)})."
+            pesan_validasi = PESAN_BUKAN_GARAM
 
         if not is_salt:
             kelas_prediksi = 'bukan objek'
