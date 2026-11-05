@@ -110,18 +110,25 @@ def handle_classification_request():
                 'message': 'Gagal memproses klasifikasi gambar.'
             }), 500
 
-        # Save results to database
+        # Check if the image is actually salt BEFORE saving to database
+        if classification_result.get('kelas') == 'bukan objek':
+            # Remove uploaded file if not salt to keep storage clean
+            if os.path.exists(upload_path):
+                try:
+                    os.remove(upload_path)
+                except Exception:
+                    pass
+            pesan = classification_result.get('pesan_validasi') or 'Gambar yang diupload bukan objek garam. Silakan upload gambar garam yang valid.'
+            return jsonify({
+                'success': False,
+                'message': pesan
+            }), 200
+
+        # Save results to database ONLY IF VALID SALT
         save_classification_to_db(filename, classification_result)
 
         # Prepare response data
         response_data = prepare_classification_response(filename, classification_result)
-        
-        # Check if the image is actually salt
-        if classification_result['kelas'] == 'bukan objek':
-            return jsonify({
-                'success': False,
-                'message': 'Gambar yang diupload bukan objek garam. Silakan upload gambar garam yang valid.'
-            }), 400
 
         return jsonify({
             'success': True,
