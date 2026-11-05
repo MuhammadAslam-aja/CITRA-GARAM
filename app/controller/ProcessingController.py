@@ -372,6 +372,30 @@ def runKlasifikasi(img, dataTrain):
         # Run KNN classification
         kelas_prediksi, hasil_jarak, hasil_akurasi = knn(data_uji, x, y, k)
 
+        # Validasi apakah citra masukan benar-benar objek garam (Outlier / Anomaly Rejection)
+        is_salt = True
+        pesan_validasi = ""
+
+        # 1. Cek saturasi warna (garam didominasi warna putih/abu-abu netral)
+        if data_uji['sat_mean'] > 45.0:
+            is_salt = False
+            pesan_validasi = "Gambar terdeteksi memiliki saturasi warna terlalu tinggi. Objek garam didominasi warna putih atau netral."
+        # 2. Cek tingkat kecerahan (garam tidak gelap pekat)
+        elif data_uji['val_mean'] < 55.0:
+            is_salt = False
+            pesan_validasi = "Gambar terlalu gelap untuk objek garam."
+        # 3. Cek tekstur butiran (garam memiliki butiran kristal)
+        elif data_uji['contrast'] < 0.2:
+            is_salt = False
+            pesan_validasi = "Gambar tidak memiliki tekstur butiran kristal garam."
+        # 4. Cek jarak tetangga terdekat (Out-of-Distribution Anomaly Rejection)
+        elif hasil_jarak > 30.0:
+            is_salt = False
+            pesan_validasi = f"Tekstur dan warna gambar tidak cocok dengan karakteristik kristal garam (jarak outlier: {round(hasil_jarak, 2)})."
+
+        if not is_salt:
+            kelas_prediksi = 'bukan objek'
+
         # Prepare result data
         new_data = {
             'hue_mean': data_uji['hue_mean'],
@@ -386,6 +410,8 @@ def runKlasifikasi(img, dataTrain):
             'energy': data_uji['energy'],
             'correlation': data_uji['correlation'],
             'kelas': kelas_prediksi,
+            'is_salt': is_salt,
+            'pesan_validasi': pesan_validasi,
             'jarak': hasil_jarak,
             'akurasi': hasil_akurasi,
             # Additional metadata
