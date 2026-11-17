@@ -9,7 +9,7 @@ from skimage import io
 from sklearn.metrics import accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import GridSearchCV, train_test_split, cross_val_score
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 def dataImage(image):
@@ -18,7 +18,16 @@ def dataImage(image):
     return files_dir
 
 def Preprocessing(image):
-    gambar = cv.imread(image)
+    # Auto-orient using PIL ImageOps to fix EXIF orientation from smartphones/laptops
+    try:
+        with Image.open(image) as pil_img:
+            pil_img = ImageOps.exif_transpose(pil_img)
+            if pil_img.mode != 'RGB':
+                pil_img = pil_img.convert('RGB')
+            gambar = cv.cvtColor(np.array(pil_img), cv.COLOR_RGB2BGR)
+    except Exception:
+        gambar = cv.imread(image)
+
     if gambar is None:
         raise ValueError(f"Cannot load image: {image}")
 
@@ -152,6 +161,10 @@ def HSV(image):
     # Garam: hampir 0% | Pakaian/objek berwarna: >10%
     high_color_ratio = float(np.sum(sat_values > 60) / len(sat_values)) if len(sat_values) > 0 else 0.0
 
+    # specular_ratio: fraction of intense specular reflection pixels (val >= 240, sat <= 8)
+    # Gula pasir kristal kaca memiliki pantulan silau jauh lebih banyak (>10-15%) dibanding garam kapur opak
+    specular_ratio = float(np.sum((val_values >= 240) & (sat_values <= 8)) / len(val_values)) if len(val_values) > 0 else 0.0
+
     data_hsv = {
         'hue_mean': float(np.mean(hue_values)),
         'hue_std': float(np.std(hue_values)),
@@ -167,7 +180,8 @@ def HSV(image):
         'val_range': float(np.max(val_values) - np.min(val_values)),
         'brightness_uniformity': float(1.0 / (1.0 + np.std(val_values))),  # Higher for uniform brightness
         # Salt discrimination feature: fraction of highly-colored pixels
-        'high_color_ratio': high_color_ratio
+        'high_color_ratio': high_color_ratio,
+        'specular_ratio': specular_ratio
     }
 
     return data_hsv
@@ -370,9 +384,11 @@ def runKlasifikasi(img, dataTrain):
         high_color  = nilai_hsv.get('high_color_ratio', 0)
         val_mean    = data_uji['val_mean']
         contrast    = data_uji['contrast']
+        specular    = nilai_hsv.get('specular_ratio', 0)
 
         # --- Referensi dari data nyata ---
-        # Garam:  sat_mean ~9-16, sat_std ~2-11, hue_std ~16-26, high_color 0-0.5%
+        # Garam:  sat_mean ~9-16, sat_std ~2-11, hue_std ~16-26, high_color 0-0.5%, jarak ~1-15
+        # Gula:   refleksi kaca kristal (specular > 12%), jarak Euclidean ke garam ~22-35
         # Bukan:  sat_mean ~41-49, sat_std ~58-60, hue_std ~56-66, high_color 16-22%
 
         PESAN_BUKAN_GARAM = "Gambar yang diinput bukan gambar garam, tolong input gambar garam"
@@ -402,7 +418,12 @@ def runKlasifikasi(img, dataTrain):
             is_salt = False
             pesan_validasi = PESAN_BUKAN_GARAM
         # 7. Cek jarak KNN (out-of-distribution)
-        elif hasil_jarak > 35.0:
+        # Ambang batas diperketat ke 22.0 agar gula (yang terkompresi di laptop) tetap tertolak
+        elif hasil_jarak > 22.0:
+            is_salt = False
+            pesan_validasi = PESAN_BUKAN_GARAM
+        # 8. Cek pantulan kilauan kristal kaca prisma (karakteristik fisik gula pasir)
+        elif specular > 0.14:
             is_salt = False
             pesan_validasi = PESAN_BUKAN_GARAM
 
